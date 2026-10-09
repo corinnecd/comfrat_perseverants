@@ -1,0 +1,33 @@
+import {parisDay,sunday} from './dates';
+type WindowState = { active: boolean; meetingDay: string; startsAt: string; expiresAt: string; nextStartAt: string };
+const zone = 'Europe/Paris';
+const partsAt = (date: Date) => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
+const shiftDay = (day: string, amount: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate()+amount); return d.toISOString().slice(0,10); };
+export function utcAtParis(day: string, hour: number) {
+  const wall = Date.parse(`${day}T${String(hour).padStart(2,'0')}:00:00Z`);
+  const offsetAt = (ms: number) => { const p = partsAt(new Date(ms)); return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second)-ms; };
+  let utc = wall-offsetAt(wall); utc = wall-offsetAt(utc); return new Date(utc).toISOString();
+}
+export function getCheckinWindow(now = new Date()): WindowState {
+  const p = partsAt(now), day = `${p.year}-${p.month}-${p.day}`;
+  const hm = +p.hour*3600 + +p.minute*60 + +p.second;
+  const weekday = p.weekday;
+  let meetingDay: string | null = null;
+  if (weekday === 'Sat' && hm >= 22*3600) meetingDay = shiftDay(day,1);
+  else if (weekday === 'Sun') meetingDay = day;
+  else if (weekday === 'Mon' && hm < 22*3600) meetingDay = shiftDay(day,-1);
+  const nextSaturdayDays: Record<string,number> = { Sat: 0, Sun: 6, Mon: 5, Tue: 4, Wed: 3, Thu: 2, Fri: 1 };
+  const nextSaturday = shiftDay(day,nextSaturdayDays[weekday] + (weekday === 'Sat' && hm >= 22*3600 ? 7 : 0));
+  const nextStartAt = utcAtParis(nextSaturday,22);
+  // One-time test opening requested for the Sunday of 11 October 2026.
+  const testStartsAt = utcAtParis('2026-10-09',21), testExpiresAt = utcAtParis('2026-10-12',22);
+  if (now.getTime() >= Date.parse(testStartsAt) && now.getTime() < Date.parse(testExpiresAt)) {
+    return { active:true, meetingDay:'2026-10-11', startsAt:testStartsAt, expiresAt:testExpiresAt, nextStartAt };
+  }
+  if (!meetingDay) return { active:false, meetingDay:'', startsAt:'', expiresAt:'', nextStartAt };
+  const sunday = weekday === 'Mon' ? shiftDay(day,-1) : meetingDay;
+  return { active: now.getTime() >= Date.parse(utcAtParis(shiftDay(sunday,-1),22)) && now.getTime() < Date.parse(utcAtParis(shiftDay(sunday,1),22)), meetingDay:sunday, startsAt:utcAtParis(shiftDay(sunday,-1),22), expiresAt:utcAtParis(shiftDay(sunday,1),22), nextStartAt };
+}
+
+export function lastCompletedSunday(now=new Date()){const latest=sunday(0,parisDay(now));return now.getTime()>=Date.parse(utcAtParis(shiftDay(latest,1),22))?latest:sunday(-1,latest);}
+export function meetingDayAt(now=new Date()){const window=getCheckinWindow(now);return window.active?window.meetingDay:sunday(0,parisDay(now));}

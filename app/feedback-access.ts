@@ -51,3 +51,11 @@ export async function codeAttemptsLimited(req:Request){await ensureSimpleAccess(
 export async function recordCodeAttempt(req:Request,success:boolean){await ensureSimpleAccess();const hash=await ipHash(req);if(success){await db().prepare('DELETE FROM feedback_access_attempts WHERE ip_hash=?').bind(hash).run();return;}const now=new Date().toISOString(),cutoff=new Date(Date.now()-15*60*1000).toISOString();await db().prepare(`INSERT INTO feedback_access_attempts(ip_hash,window_start,attempts) VALUES(?,?,1) ON CONFLICT(ip_hash) DO UPDATE SET window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END,attempts=CASE WHEN window_start<? THEN 1 ELSE attempts+1 END`).bind(hash,now,cutoff,cutoff).run();}
 export async function teamCodeAttemptsLimited(req:Request){await ensureSimpleAccess();const row=await db().prepare('SELECT window_start,attempts FROM team_access_attempts WHERE ip_hash=?').bind(await ipHash(req)).first<{window_start:string,attempts:number}>();return !!row&&Date.now()-Date.parse(row.window_start)<15*60*1000&&row.attempts>=8;}
 export async function recordTeamCodeAttempt(req:Request,success:boolean){await ensureSimpleAccess();const hash=await ipHash(req);if(success){await db().prepare('DELETE FROM team_access_attempts WHERE ip_hash=?').bind(hash).run();return;}const now=new Date().toISOString(),cutoff=new Date(Date.now()-15*60*1000).toISOString();await db().prepare(`INSERT INTO team_access_attempts(ip_hash,window_start,attempts) VALUES(?,?,1) ON CONFLICT(ip_hash) DO UPDATE SET window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END,attempts=CASE WHEN window_start<? THEN 1 ELSE attempts+1 END`).bind(hash,now,cutoff,cutoff).run();}
+
+export async function replaceAccessCode(target:'team'|'feedback',code:string){
+ await ensureSimpleAccess();const hash=await codeHash(code);const d=db();
+ const key=target==='team'?'team_access_code':'feedback_access_code';
+ const sessions=target==='team'?'team_access_sessions':'feedback_access_sessions';
+ const attempts=target==='team'?'team_access_attempts':'feedback_access_attempts';
+ await d.batch([d.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(key,hash),d.prepare(`DELETE FROM ${sessions}`),d.prepare(`DELETE FROM ${attempts}`)]);
+}
