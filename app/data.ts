@@ -1,6 +1,6 @@
 import {sunday} from './dates';
 export {parisDay,sunday,dateLabel} from './dates';
-export const PERSON_STATUSES = ['Membre', 'Pilier', 'Pasteur', 'Nouveau', 'NA', 'NC', 'Invité'];
+export const PERSON_STATUSES = ['Pasteur', 'Pilier', 'Membre', 'Nouveau', 'NA', 'NC', 'Invité'];
 export const MEMBER_STATUSES = ['Membre', 'Pilier', 'Pasteur'];
 export type Person={id:string,first:string,last:string,email:string,phone:string,city:string,department:string,status:string,inviter:string,token:string,created:string};
 export type Attendance={person:string,day:string,time:string,mode:string};
