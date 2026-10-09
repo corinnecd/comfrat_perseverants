@@ -8,6 +8,13 @@
       "when": 1790172065754,
       "tag": "0000_slimy_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791568750732,
+      "tag": "0001_special_maria_hill",
+      "breakpoints": true
     }
   ]
 }

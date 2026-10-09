@@ -3,3 +3,5 @@ export const people = sqliteTable('people', {id:text('id').primaryKey(),first:te
 export const attendance=sqliteTable('attendance',{person:text('person').notNull().references(()=>people.id),day:text('day').notNull(),time:text('time').notNull(),mode:text('mode').notNull()},t=>[primaryKey({columns:[t.person,t.day]})]);
 export const followups=sqliteTable('followups',{person:text('person').primaryKey().references(()=>people.id),note:text('note').notNull(),updated:text('updated').notNull()});
 export const settings=sqliteTable('settings',{key:text('key').primaryKey(),value:text('value').notNull()});
+
+export const checkinSessions = sqliteTable('checkin_sessions',{meetingDay:text('meeting_day').primaryKey(),token:text('token').notNull().unique(),startsAt:text('starts_at').notNull(),expiresAt:text('expires_at').notNull(),createdAt:text('created_at').notNull()});
