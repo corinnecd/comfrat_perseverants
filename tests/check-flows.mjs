@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+const origin='http://localhost:5173';
+const post=async(body)=>{const r=await fetch(origin+'/api/checkin',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};};
+const denied=await fetch(origin+'/api/manage');assert.equal(denied.status,403);
+assert.equal((await post({first:'Incomplete'})).status,400);
+const unique=Date.now();const person={first:'Test',last:'Verification'+unique,email:`test${unique}@example.invalid`,phone:'0600000000',city:'Paris',department:'75',status:'Invité',inviter:'Test Accueil'};
+const created=await post(person);assert.equal(created.status,200,JSON.stringify(created));assert.ok(created.data.token);
+const identify=await fetch(origin+'/api/checkin?token='+created.data.token);assert.deepEqual(await identify.json(),{first:'Test'});
+assert.equal((await post({token:created.data.token})).status,200);
+assert.equal((await post(person)).status,409);
+assert.equal((await post({token:'invalid'})).status,404);
+const signin=await fetch(origin+'/signin-with-chatgpt?return_to=/',{redirect:'manual'});const cookies=signin.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');assert.ok(cookies);
+const records=await fetch(origin+'/api/manage',{headers:{Cookie:cookies}});assert.equal(records.status,200);const data=await records.json();const saved=data.people.find(p=>p.email===person.email);assert.ok(saved);assert.equal(data.attendance.filter(a=>a.person===saved.id).length,1,'Repeated check-in must not duplicate attendance');
+const follow=await fetch(origin+'/api/manage',{method:'POST',headers:{Origin:origin,Cookie:cookies,'Content-Type':'application/json'},body:JSON.stringify({action:'followup',id:saved.id,note:'Test de suivi'})});assert.equal(follow.status,200);
+const after=await (await fetch(origin+'/api/manage',{headers:{Cookie:cookies}})).json();assert.equal(after.followups.find(f=>f.person===saved.id).note,'Test de suivi');
+console.log('PASS: access control, validation, registration, QR lookup, repeat check-in, duplicate registration, durable record, follow-up.');
