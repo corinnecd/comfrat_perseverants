@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const module=source=>'data:text/javascript;base64,'+Buffer.from(ts.transpile(source,{module:ts.ModuleKind.ESNext})).toString('base64');
+const dates=module(readFileSync('app/dates.ts','utf8'));
+const {sundaysInMonth,monthlyPresence}=await import(module(readFileSync('app/monthly-presence.ts','utf8').replace("'./dates'",JSON.stringify(dates))));
+assert.deepEqual(sundaysInMonth('2026-10'),['2026-10-04','2026-10-11','2026-10-18','2026-10-25']);
+assert.deepEqual(sundaysInMonth('2026-11'),['2026-11-01','2026-11-08','2026-11-15','2026-11-22','2026-11-29']);
+assert.equal(sundaysInMonth('2026-02').length,4);
+assert.equal(sundaysInMonth('2032-02').length,5);
+assert.equal(sundaysInMonth('2026-13').length,0);
+const people=[{id:'one',created:'2026-01-01T12:00:00Z'},{id:'zero',created:'2026-10-10T12:00:00Z'},{id:'future',created:'2026-11-01T12:00:00Z'},{id:'boundary',created:'2026-10-31T23:30:00Z'}];
+const attendance=[{person:'one',day:'2026-10-04'},{person:'one',day:'2026-10-04'},{person:'one',day:'2026-10-11'},{person:'one',day:'2026-10-12'},{person:'one',day:'2026-09-27'}];
+assert.deepEqual(monthlyPresence(people,attendance,'2026-10').map(x=>[x.person.id,x.count,x.total]),[['one',2,4],['zero',0,4]]);
+assert.equal(monthlyPresence(people,[{person:'one',day:'2026-11-01'}],'2026-11')[0].count,1);
+assert.equal(monthlyPresence(people,[],'2026-11')[0].total,5);
+assert.deepEqual(monthlyPresence(people,[],'invalid'),[]);
+console.log('PASS: four/five Sundays, leap years, unique Sunday attendance, zero presence, month boundaries and Paris registration dates.');
