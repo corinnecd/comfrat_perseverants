@@ -30,6 +30,11 @@ export function getCheckinWindow(now = new Date()): WindowState {
   const nextSaturdayDays: Record<string,number> = { Sat: 0, Sun: 6, Mon: 5, Tue: 4, Wed: 3, Thu: 2, Fri: 1 };
   const nextSaturday = shiftDay(day,nextSaturdayDays[weekday] + (weekday === 'Sat' && hm >= 22*3600 ? 7 : 0));
   const nextStartAt = utcAtParis(nextSaturday,22);
+  // One-time test opening requested for the Sunday of 11 October 2026.
+  const testStartsAt = utcAtParis('2026-10-09',21), testExpiresAt = utcAtParis('2026-10-12',22);
+  if (now.getTime() >= Date.parse(testStartsAt) && now.getTime() < Date.parse(testExpiresAt)) {
+    return { active:true, meetingDay:'2026-10-11', startsAt:testStartsAt, expiresAt:testExpiresAt, nextStartAt };
+  }
   if (!meetingDay) return { active:false, meetingDay:'', startsAt:'', expiresAt:'', nextStartAt };
   const sunday = weekday === 'Mon' ? shiftDay(day,-1) : meetingDay;
   return { active: now.getTime() >= Date.parse(utcAtParis(shiftDay(sunday,-1),22)) && now.getTime() < Date.parse(utcAtParis(shiftDay(sunday,1),22)), meetingDay:sunday, startsAt:utcAtParis(shiftDay(sunday,-1),22), expiresAt:utcAtParis(shiftDay(sunday,1),22), nextStartAt };
