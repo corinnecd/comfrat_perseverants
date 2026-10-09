@@ -1,7 +1,9 @@
-import { sqliteTable, text, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
 export const people = sqliteTable('people', {id:text('id').primaryKey(),first:text('first').notNull(),last:text('last').notNull(),email:text('email').notNull(),phone:text('phone').notNull(),city:text('city').notNull(),department:text('department').notNull(),status:text('status').notNull(),inviter:text('inviter').notNull().default(''),token:text('token').notNull(),created:text('created').notNull()},t=>[uniqueIndex('people_token').on(t.token),uniqueIndex('people_identity').on(t.email,t.first,t.last)]);
 export const attendance=sqliteTable('attendance',{person:text('person').notNull().references(()=>people.id),day:text('day').notNull(),time:text('time').notNull(),mode:text('mode').notNull()},t=>[primaryKey({columns:[t.person,t.day]})]);
 export const followups=sqliteTable('followups',{person:text('person').primaryKey().references(()=>people.id),note:text('note').notNull(),updated:text('updated').notNull()});
 export const settings=sqliteTable('settings',{key:text('key').primaryKey(),value:text('value').notNull()});
 
 export const checkinSessions = sqliteTable('checkin_sessions',{meetingDay:text('meeting_day').primaryKey(),token:text('token').notNull().unique(),startsAt:text('starts_at').notNull(),expiresAt:text('expires_at').notNull(),createdAt:text('created_at').notNull()});
+
+export const personDetails=sqliteTable('person_details',{person:text('person').primaryKey().references(()=>people.id),birthdayDay:integer('birthday_day'),birthdayMonth:integer('birthday_month'),ageRange:text('age_range')});

@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const source=ts.transpile(readFileSync('app/person-details.ts','utf8'),{module:ts.ModuleKind.ESNext});
+const {parsePersonDetails,AGE_RANGES}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+assert.deepEqual(parsePersonDetails({}),{birthday_day:null,birthday_month:null,age_range:null});
+assert.deepEqual(parsePersonDetails({birthday_day:'29',birthday_month:'2',age_range:AGE_RANGES[0]}),{birthday_day:29,birthday_month:2,age_range:'14 ans ou moins'});
+for(const [day,month] of [[31,4],[30,2],[0,1],[1,13],[1.5,1]])assert.throws(()=>parsePersonDetails({birthday_day:day,birthday_month:month}));
+assert.throws(()=>parsePersonDetails({birthday_day:'12'}));
+assert.throws(()=>parsePersonDetails({birthday_month:'2'}));
+assert.throws(()=>parsePersonDetails({age_range:'invalide'}));
+for(const age_range of AGE_RANGES)assert.equal(parsePersonDetails({age_range}).age_range,age_range);
+console.log('PASS: optional fields, leap-day birthdays, invalid dates and supported age ranges.');
