@@ -2,7 +2,8 @@ import {db} from '../db/raw';
 
 const COOKIE='comfrat_feedback_access';
 const TEAM_COOKIE='comfrat_team_access';
-const CODE_ITERATIONS=310000;
+// Cloudflare Workers limits Web Crypto PBKDF2 to 100,000 iterations.
+const CODE_ITERATIONS=100000;
 let migration:Promise<void>|null=null;
 
 function bytesToBase64(bytes:Uint8Array){let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);return btoa(binary);}
@@ -28,7 +29,7 @@ export async function ensureSimpleAccess(){
 }
 
 async function codeHash(code:string){const salt=crypto.getRandomValues(new Uint8Array(16));const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(code),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:CODE_ITERATIONS},key,256);return `pbkdf2$${CODE_ITERATIONS}$${bytesToBase64(salt)}$${bytesToBase64(new Uint8Array(bits))}`;}
-async function verifyCode(code:string,stored:string){try{const [scheme,iterations,saltText,hashText]=stored.split('$');if(scheme!=='pbkdf2')return false;const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(code),'PBKDF2',false,['deriveBits']);const bits=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:base64ToBytes(saltText),iterations:Number(iterations)},key,256));const expected=base64ToBytes(hashText);if(bits.length!==expected.length)return false;let diff=0;for(let i=0;i<bits.length;i++)diff|=bits[i]^expected[i];return diff===0;}catch{return false;}}
+async function verifyCode(code:string,stored:string){try{const [scheme,iterationsText,saltText,hashText]=stored.split('$');const iterations=Number(iterationsText);if(scheme!=='pbkdf2'||!Number.isSafeInteger(iterations)||iterations<1||iterations>CODE_ITERATIONS||!saltText||!hashText)return false;const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(code),'PBKDF2',false,['deriveBits']);const bits=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:base64ToBytes(saltText),iterations},key,256));const expected=base64ToBytes(hashText);if(bits.length!==expected.length)return false;let diff=0;for(let i=0;i<bits.length;i++)diff|=bits[i]^expected[i];return diff===0;}catch{return false;}}
 export async function feedbackCodeExists(){return !!(await db().prepare("SELECT value FROM settings WHERE key='feedback_access_code'").first<{value:string}>());}
 export async function saveFeedbackCode(code:string){const hash=await codeHash(code);await db().prepare("INSERT INTO settings(key,value) VALUES('feedback_access_code',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(hash).run();}
 export async function verifyFeedbackCode(code:string){const row=await db().prepare("SELECT value FROM settings WHERE key='feedback_access_code'").first<{value:string}>();return row?verifyCode(code,row.value):false;}
