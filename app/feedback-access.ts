@@ -1,6 +1,7 @@
 import {db} from '../db/raw';
 
 const COOKIE='comfrat_feedback_access';
+const TEAM_COOKIE='comfrat_team_access';
 const CODE_ITERATIONS=310000;
 let migration:Promise<void>|null=null;
 
@@ -20,6 +21,8 @@ export async function ensureSimpleAccess(){
     }
     await d.prepare(`CREATE TABLE IF NOT EXISTS feedback_access_sessions(token_hash TEXT PRIMARY KEY NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL)`).run();
     await d.prepare(`CREATE TABLE IF NOT EXISTS feedback_access_attempts(ip_hash TEXT PRIMARY KEY NOT NULL,window_start TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0)`).run();
+    await d.prepare(`CREATE TABLE IF NOT EXISTS team_access_sessions(token_hash TEXT PRIMARY KEY NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL)`).run();
+    await d.prepare(`CREATE TABLE IF NOT EXISTS team_access_attempts(ip_hash TEXT PRIMARY KEY NOT NULL,window_start TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0)`).run();
   })().catch(error=>{migration=null;throw error;});
   await migration;
 }
@@ -29,11 +32,21 @@ async function verifyCode(code:string,stored:string){try{const [scheme,iteration
 export async function feedbackCodeExists(){return !!(await db().prepare("SELECT value FROM settings WHERE key='feedback_access_code'").first<{value:string}>());}
 export async function saveFeedbackCode(code:string){const hash=await codeHash(code);await db().prepare("INSERT INTO settings(key,value) VALUES('feedback_access_code',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(hash).run();}
 export async function verifyFeedbackCode(code:string){const row=await db().prepare("SELECT value FROM settings WHERE key='feedback_access_code'").first<{value:string}>();return row?verifyCode(code,row.value):false;}
+export async function teamCodeExists(){return !!(await db().prepare("SELECT value FROM settings WHERE key='team_access_code'").first<{value:string}>());}
+export async function saveTeamCode(code:string){const hash=await codeHash(code);await db().prepare("INSERT INTO settings(key,value) VALUES('team_access_code',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(hash).run();}
+export async function verifyTeamCode(code:string){const row=await db().prepare("SELECT value FROM settings WHERE key='team_access_code'").first<{value:string}>();return row?verifyCode(code,row.value):false;}
 function sessionToken(req:Request){const prefix=COOKIE+'=';return req.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith(prefix))?.slice(prefix.length)||null;}
+function teamSessionToken(req:Request){const prefix=TEAM_COOKIE+'=';return req.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith(prefix))?.slice(prefix.length)||null;}
 function sessionCookie(token:string,req:Request,maxAge=7200){const secure=new URL(req.url).protocol==='https:'?'; Secure':'';return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;}
+function teamSessionCookie(token:string,req:Request,maxAge=43200){const secure=new URL(req.url).protocol==='https:'?'; Secure':'';return `${TEAM_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;}
 export async function grantFeedbackAccess(req:Request){await ensureSimpleAccess();const token=crypto.randomUUID()+crypto.randomUUID(),now=new Date();await db().prepare('INSERT INTO feedback_access_sessions(token_hash,expires_at,created_at) VALUES(?,?,?)').bind(await digest(token),new Date(now.getTime()+2*60*60*1000).toISOString(),now.toISOString()).run();return sessionCookie(token,req);}
+export async function grantTeamAccess(req:Request){await ensureSimpleAccess();const token=crypto.randomUUID()+crypto.randomUUID(),now=new Date();await db().prepare('INSERT INTO team_access_sessions(token_hash,expires_at,created_at) VALUES(?,?,?)').bind(await digest(token),new Date(now.getTime()+12*60*60*1000).toISOString(),now.toISOString()).run();return teamSessionCookie(token,req);}
 export async function hasFeedbackAccess(req:Request){await ensureSimpleAccess();const token=sessionToken(req);if(!token)return false;const row=await db().prepare('SELECT expires_at FROM feedback_access_sessions WHERE token_hash=?').bind(await digest(token)).first<{expires_at:string}>();return !!row&&Date.parse(row.expires_at)>Date.now();}
+export async function hasTeamAccess(req:Request){await ensureSimpleAccess();const token=teamSessionToken(req);if(!token)return false;const row=await db().prepare('SELECT expires_at FROM team_access_sessions WHERE token_hash=?').bind(await digest(token)).first<{expires_at:string}>();return !!row&&Date.parse(row.expires_at)>Date.now();}
 export async function revokeFeedbackAccess(req:Request){const token=sessionToken(req);if(token){await ensureSimpleAccess();await db().prepare('DELETE FROM feedback_access_sessions WHERE token_hash=?').bind(await digest(token)).run();}return sessionCookie('',req,0);}
+export async function revokeTeamAccess(req:Request){const token=teamSessionToken(req);if(token){await ensureSimpleAccess();await db().prepare('DELETE FROM team_access_sessions WHERE token_hash=?').bind(await digest(token)).run();}return teamSessionCookie('',req,0);}
 async function ipHash(req:Request){return digest(req.headers.get('cf-connecting-ip')||'unknown');}
 export async function codeAttemptsLimited(req:Request){await ensureSimpleAccess();const row=await db().prepare('SELECT window_start,attempts FROM feedback_access_attempts WHERE ip_hash=?').bind(await ipHash(req)).first<{window_start:string,attempts:number}>();return !!row&&Date.now()-Date.parse(row.window_start)<15*60*1000&&row.attempts>=8;}
 export async function recordCodeAttempt(req:Request,success:boolean){await ensureSimpleAccess();const hash=await ipHash(req);if(success){await db().prepare('DELETE FROM feedback_access_attempts WHERE ip_hash=?').bind(hash).run();return;}const now=new Date().toISOString(),cutoff=new Date(Date.now()-15*60*1000).toISOString();await db().prepare(`INSERT INTO feedback_access_attempts(ip_hash,window_start,attempts) VALUES(?,?,1) ON CONFLICT(ip_hash) DO UPDATE SET window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END,attempts=CASE WHEN window_start<? THEN 1 ELSE attempts+1 END`).bind(hash,now,cutoff,cutoff).run();}
+export async function teamCodeAttemptsLimited(req:Request){await ensureSimpleAccess();const row=await db().prepare('SELECT window_start,attempts FROM team_access_attempts WHERE ip_hash=?').bind(await ipHash(req)).first<{window_start:string,attempts:number}>();return !!row&&Date.now()-Date.parse(row.window_start)<15*60*1000&&row.attempts>=8;}
+export async function recordTeamCodeAttempt(req:Request,success:boolean){await ensureSimpleAccess();const hash=await ipHash(req);if(success){await db().prepare('DELETE FROM team_access_attempts WHERE ip_hash=?').bind(hash).run();return;}const now=new Date().toISOString(),cutoff=new Date(Date.now()-15*60*1000).toISOString();await db().prepare(`INSERT INTO team_access_attempts(ip_hash,window_start,attempts) VALUES(?,?,1) ON CONFLICT(ip_hash) DO UPDATE SET window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END,attempts=CASE WHEN window_start<? THEN 1 ELSE attempts+1 END`).bind(hash,now,cutoff,cutoff).run();}
