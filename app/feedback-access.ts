@@ -18,7 +18,7 @@ export async function ensureSimpleAccess(){
       await d.prepare('DROP TABLE IF EXISTS app_access_sessions').run();
       await d.prepare('DROP TABLE IF EXISTS app_access_login_attempts').run();
       await d.prepare("DELETE FROM settings WHERE key IN ('access_team_password','access_leader_password')").run();
-      await d.prepare("INSERT OR IGNORE INTO settings(key,value) VALUES('simple_access_migration_v1','1')").run();
+      await d.prepare("INSERT INTO settings(key,value) VALUES('simple_access_migration_v1','1') ON CONFLICT DO NOTHING").run();
     }
     await d.prepare(`CREATE TABLE IF NOT EXISTS feedback_access_sessions(token_hash TEXT PRIMARY KEY NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL)`).run();
     await d.prepare(`CREATE TABLE IF NOT EXISTS feedback_access_attempts(ip_hash TEXT PRIMARY KEY NOT NULL,window_start TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0)`).run();

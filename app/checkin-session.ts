@@ -19,7 +19,7 @@ export async function getOrCreateActiveSession(now = new Date()) {
   const d = db();
   let row = await d.prepare('SELECT token FROM checkin_sessions WHERE meeting_day=?').bind(window.meetingDay).first<{token:string}>();
   if (!row) {
-    await d.prepare('INSERT OR IGNORE INTO checkin_sessions(meeting_day,token,starts_at,expires_at,created_at) VALUES(?,?,?,?,?)').bind(window.meetingDay,crypto.randomUUID()+crypto.randomUUID(),window.startsAt,window.expiresAt,now.toISOString()).run();
+    await d.prepare('INSERT INTO checkin_sessions(meeting_day,token,starts_at,expires_at,created_at) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING').bind(window.meetingDay,crypto.randomUUID()+crypto.randomUUID(),window.startsAt,window.expiresAt,now.toISOString()).run();
     row = await d.prepare('SELECT token FROM checkin_sessions WHERE meeting_day=?').bind(window.meetingDay).first<{token:string}>();
   }
   if (!row) throw new Error('Impossible de créer le QR de la rencontre.');
