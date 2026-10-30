@@ -52,10 +52,29 @@ export async function recordCodeAttempt(req:Request,success:boolean){await ensur
 export async function teamCodeAttemptsLimited(req:Request){await ensureSimpleAccess();const row=await db().prepare('SELECT window_start,attempts FROM team_access_attempts WHERE ip_hash=?').bind(await ipHash(req)).first<{window_start:string,attempts:number}>();return !!row&&Date.now()-Date.parse(row.window_start)<15*60*1000&&row.attempts>=8;}
 export async function recordTeamCodeAttempt(req:Request,success:boolean){await ensureSimpleAccess();const hash=await ipHash(req);if(success){await db().prepare('DELETE FROM team_access_attempts WHERE ip_hash=?').bind(hash).run();return;}const now=new Date().toISOString(),cutoff=new Date(Date.now()-15*60*1000).toISOString();await db().prepare(`INSERT INTO team_access_attempts(ip_hash,window_start,attempts) VALUES(?,?,1) ON CONFLICT(ip_hash) DO UPDATE SET window_start=CASE WHEN team_access_attempts.window_start<? THEN excluded.window_start ELSE team_access_attempts.window_start END,attempts=CASE WHEN team_access_attempts.window_start<? THEN 1 ELSE team_access_attempts.attempts+1 END`).bind(hash,now,cutoff,cutoff).run();}
 
-export async function replaceAccessCode(target:'team'|'feedback',code:string){
- await ensureSimpleAccess();const hash=await codeHash(code);const d=db();
- const key=target==='team'?'team_access_code':'feedback_access_code';
- const sessions=target==='team'?'team_access_sessions':'feedback_access_sessions';
- const attempts=target==='team'?'team_access_attempts':'feedback_access_attempts';
+export async function replaceAccessCode(target:'team'|'feedback'|'accueil',code:string){
+ await ensureSimpleAccess();await ensureAccueilAccess();const hash=await codeHash(code);const d=db();
+ const key=target==='team'?'team_access_code':target==='accueil'?'accueil_access_code':'feedback_access_code';
+ const sessions=target==='team'?'team_access_sessions':target==='accueil'?'accueil_access_sessions':'feedback_access_sessions';
+ const attempts=target==='feedback'?'feedback_access_attempts':'team_access_attempts';
  await d.batch([d.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(key,hash),d.prepare(`DELETE FROM ${sessions}`),d.prepare(`DELETE FROM ${attempts}`)]);
 }
+
+/* ---------------------------------------------------------------------------
+ * Code « Accueil » : bénévoles qui scannent et enregistrent les présences.
+ * Ils voient les noms, les anniversaires et la liste des présents du jour,
+ * jamais les coordonnées, les suivis, les prières ni les statistiques.
+ * Même formulaire que le code équipe ; le code saisi détermine le niveau.
+ * ------------------------------------------------------------------------- */
+const ACCUEIL_COOKIE='comfrat_accueil_access';
+let accueilReady:Promise<void>|null=null;
+async function ensureAccueilAccess(){if(!accueilReady)accueilReady=db().prepare('CREATE TABLE IF NOT EXISTS accueil_access_sessions(token_hash TEXT PRIMARY KEY NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL)').run().then(()=>{}).catch(e=>{accueilReady=null;throw e;});await accueilReady;}
+function accueilSessionToken(req:Request){const prefix=ACCUEIL_COOKIE+'=';return req.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith(prefix))?.slice(prefix.length)||null;}
+function accueilSessionCookie(token:string,req:Request,maxAge=43200){const secure=new URL(req.url).protocol==='https:'?'; Secure':'';return `${ACCUEIL_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;}
+export async function accueilCodeExists(){return !!(await db().prepare("SELECT value FROM settings WHERE key='accueil_access_code'").first<{value:string}>());}
+export async function verifyAccueilCode(code:string){const row=await db().prepare("SELECT value FROM settings WHERE key='accueil_access_code'").first<{value:string}>();return row?verifyCode(code,row.value):false;}
+export async function grantAccueilAccess(req:Request){await ensureAccueilAccess();const token=crypto.randomUUID()+crypto.randomUUID(),now=new Date();await db().prepare('INSERT INTO accueil_access_sessions(token_hash,expires_at,created_at) VALUES(?,?,?)').bind(await digest(token),new Date(now.getTime()+12*60*60*1000).toISOString(),now.toISOString()).run();return accueilSessionCookie(token,req);}
+export async function hasAccueilAccess(req:Request){const token=accueilSessionToken(req);if(!token)return false;await ensureAccueilAccess();const row=await db().prepare('SELECT expires_at FROM accueil_access_sessions WHERE token_hash=?').bind(await digest(token)).first<{expires_at:string}>();return !!row&&Date.parse(row.expires_at)>Date.now();}
+export async function revokeAccueilAccess(req:Request){const token=accueilSessionToken(req);if(token){await ensureAccueilAccess();await db().prepare('DELETE FROM accueil_access_sessions WHERE token_hash=?').bind(await digest(token)).run();}return accueilSessionCookie('',req,0);}
+/** Niveau d'accès de la personne : « team » (responsables), « accueil » (bénévoles) ou null. */
+export async function accessRole(req:Request):Promise<'team'|'accueil'|null>{if(await hasTeamAccess(req))return 'team';if(await hasAccueilAccess(req))return 'accueil';return null;}

@@ -1,9 +1,7 @@
-import {db, isUniqueViolation} from '../../../db/raw';
+import {db} from '../../../db/raw';
 import {getOrCreateActiveSession} from '../../checkin-session';
-import {ensureChildren} from '../../children-store';
+import {addChild, ensureChildren} from '../../children-store';
 import {ensurePersonDetails} from '../../person-details-store';
-import {CHILD_AGE_RANGES, parsePersonDetails} from '../../person-details';
-import {CHILD_STATUS} from '../../data';
 
 export const dynamic = 'force-dynamic';
 const json = (data: unknown, status = 200) => Response.json(data, {status, headers: {'Cache-Control': 'no-store'}});
@@ -69,33 +67,8 @@ export async function POST(req: Request) {
     }
 
     if (b.action === 'add') {
-      for (const key of ['first', 'last']) if (typeof b[key] !== 'string' || !(b[key] as string).trim() || (b[key] as string).length > 200) return json({error: 'Indiquez le prénom et le nom de l’enfant.'}, 400);
-      if (b.consent !== true) return json({error: 'Merci de confirmer que vous êtes son parent ou responsable légal.'}, 400);
-      const phone = typeof b.phone === 'string' ? b.phone.trim() : '';
-      if (phone && !/^\+?[\d\s().-]{8,25}$/.test(phone)) return json({error: 'Vérifiez le numéro de téléphone de l’enfant.'}, 400);
-      if (!b.birthday_day || !b.birthday_month) return json({error: 'Indiquez le jour et le mois d’anniversaire de l’enfant.'}, 400);
-      if (typeof b.age_range !== 'string' || !(CHILD_AGE_RANGES as readonly string[]).includes(b.age_range)) return json({error: 'Choisissez la tranche d’âge de l’enfant.'}, 400);
-      let details;
-      try { details = parsePersonDetails(b); } catch (error) { return json({error: (error as Error).message}, 400); }
-      const first = (b.first as string).trim(), last = (b.last as string).trim();
-      // Même enfant déjà enregistré par ce parent : on le réutilise au lieu de créer un doublon.
-      const existing = (await listChildren(parent.id, null)).find((c) => c.first.toLowerCase() === first.toLowerCase() && c.last.toLowerCase() === last.toLowerCase());
-      let childId = existing?.id;
-      if (!childId) {
-        childId = crypto.randomUUID();
-        const now = new Date().toISOString();
-        try {
-          await d.batch([
-            d.prepare('INSERT INTO people(id,first,last,email,phone,city,department,status,inviter,token,created) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(childId, first, last, parent.email, phone, parent.city, parent.department, CHILD_STATUS, '', crypto.randomUUID() + crypto.randomUUID(), now),
-            d.prepare('INSERT INTO person_details(person,birthday_day,birthday_month,age_range) VALUES(?,?,?,?)').bind(childId, details.birthday_day, details.birthday_month, details.age_range),
-            d.prepare('INSERT INTO person_parents(child,parent,created) VALUES(?,?,?)').bind(childId, parent.id, now),
-          ]);
-        } catch (e) {
-          if (isUniqueViolation(e)) return json({error: 'Une fiche porte déjà ce prénom et ce nom avec votre e-mail. Demandez de l’aide à l’accueil.'}, 409);
-          throw e;
-        }
-      }
-      if (day) await markPresent(childId, day);
+      const added = await addChild(parent, b, day);
+      if ('error' in added) return json({error: added.error}, added.status);
       return json({ok: true, present: !!day, children: await listChildren(parent.id, day)});
     }
     return json({error: 'Action inconnue.'}, 400);
