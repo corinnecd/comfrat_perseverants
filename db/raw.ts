@@ -156,3 +156,10 @@ export function toPostgresPlaceholders(query: string): string {
   }
   return out;
 }
+
+/** Vrai si l'erreur vient d'une contrainte d'unicité (SQLite/D1 ou PostgreSQL/Neon). */
+export function isUniqueViolation(error: unknown): boolean {
+  const text = String((error as {message?: string})?.message ?? error);
+  const code = (error as {code?: string})?.code;
+  return code === '23505' || /UNIQUE|duplicate key/i.test(text);
+}

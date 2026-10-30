@@ -15,5 +15,5 @@ export function monthStart(offset = 0, referenceDay = parisDay()) {
 }
 export function dateLabel(day: string, options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return 'Date non renseignée';
-  return new Intl.DateTimeFormat('fr-FR', { ...options, timeZone: TIME_ZONE }).format(new Date(day + 'T12:00:00Z'));
+  return new Intl.DateTimeFormat('fr-FR', { ...options, timeZone: TIME_ZONE }).format(new Date(day + 'T12:00:00Z')).replace(/(^|\s)1 (?=\p{L})/u, '$11er ');
 }
