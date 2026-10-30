@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { db } from '../db/raw';
-import {getCheckinWindow as calendarWindow, utcAtParis} from './meeting-calendar';
+import {getCheckinWindow as calendarWindow, utcAtParis, meetingDayAt} from './meeting-calendar';
 import {parisDay, sunday} from './dates';
 
 /**
@@ -56,4 +56,10 @@ export function parseCookie(request: Request, name: string) {
 export function personCookie(token:string,request:Request) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
   return `comfrat_person=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}`;
+}
+
+/** Jour de rencontre utilisé par l'équipe : le même que celui du QR quand il est ouvert. */
+export function teamMeetingDay(now = new Date()) {
+  const window = getCheckinWindow(now);
+  return window.active ? window.meetingDay : meetingDayAt(now);
 }
