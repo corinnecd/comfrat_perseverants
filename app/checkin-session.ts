@@ -1,7 +1,31 @@
+import { env } from 'cloudflare:workers';
 import { db } from '../db/raw';
+import {getCheckinWindow as calendarWindow, utcAtParis} from './meeting-calendar';
+import {parisDay, sunday} from './dates';
 
-import {getCheckinWindow} from './meeting-calendar';
-export {getCheckinWindow} from './meeting-calendar';
+/**
+ * Ouverture du QR pour les ESSAIS uniquement.
+ * Active seulement si les DEUX variables sont présentes (fichier local .dev.vars) :
+ *   - COMFRAT_TEST_CHECKIN_OPEN=1
+ *   - DATABASE_URL (base Neon d'essais)
+ * La production n'a ni l'une ni l'autre : son horaire samedi 22 h – lundi 22 h reste inchangé.
+ */
+function testOpeningEnabled() {
+  const e = env as Cloudflare.Env;
+  return e.COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1' && !!e.DATABASE_URL?.trim();
+}
+
+export function getCheckinWindow(now = new Date()) {
+  const window = calendarWindow(now);
+  if (window.active || !testOpeningEnabled()) return window;
+  const today = parisDay(now);
+  const isSunday = new Date(`${today}T12:00:00Z`).getUTCDay() === 0;
+  const meetingDay = isSunday ? today : sunday(1, today);
+  const next = new Date(`${meetingDay}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const monday = next.toISOString().slice(0, 10);
+  return { ...window, active: true, meetingDay, startsAt: utcAtParis(today, 0), expiresAt: utcAtParis(monday, 22) };
+}
 let sessionTableReady: Promise<void> | null = null;
 async function ensureSessionTable() {
   if (!sessionTableReady) {
