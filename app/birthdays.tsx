@@ -55,7 +55,7 @@ export default function BirthdaysPage({people, today}: {people: Person[]; today:
             </ul>
           )}
         </div>
-        <BirthdayArt/>
+        <picture className="birthday-photo"><source media="(max-width:760px)" srcSet="/anniversaire-mobile.webp"/><img src="/anniversaire.webp" alt="Une femme souffle les bougies de son gâteau d’anniversaire, entourée de sa famille et de ses amis qui applaudissent" width={1400} height={933} decoding="async"/></picture>
       </section>
 
       <section className="card birthday-upcoming">
@@ -79,38 +79,5 @@ export default function BirthdaysPage({people, today}: {people: Person[]; today:
         <p className="birthday-note">{withBirthday.length} personne{withBirthday.length > 1 ? 's' : ''} sur {people.length} {withBirthday.length > 1 ? 'ont' : 'a'} renseigné son anniversaire.</p>
       </section>
     </div>
-  );
-}
-
-/** Illustration originale : ballons, gâteau et étoiles. */
-function BirthdayArt() {
-  const balloons: [number, number, string, number][] = [[62, 70, '#efb437', 0], [118, 48, '#e8735a', 0.6], [170, 78, '#4f9d8a', 1.2], [222, 56, '#e9a3b8', 1.8]];
-  return (
-    <svg className="birthday-art" viewBox="0 0 280 260" role="img" aria-label="Ballons et gâteau d’anniversaire">
-      {balloons.map(([x, y, c, delay], i) => (
-        <g key={i} className="balloon" style={{animationDelay: `${delay}s`}}>
-          <path d={`M${x} ${y + 34} q -6 30 4 58 q 8 22 -2 44`} stroke="#f3e6c8" strokeWidth="1.4" fill="none" opacity=".75"/>
-          <ellipse cx={x} cy={y} rx="22" ry="28" fill={c}/>
-          <ellipse cx={x - 7} cy={y - 10} rx="5" ry="8" fill="#fff" opacity=".35"/>
-          <path d={`M${x - 4} ${y + 27} l4 7 l4 -7 z`} fill={c}/>
-        </g>
-      ))}
-      <g transform="translate(92 150)">
-        <rect x="0" y="40" width="112" height="52" rx="10" fill="#fffaf0"/>
-        <path d="M0 52 q14 12 28 0 t28 0 t28 0 t28 0 v-6 a10 10 0 0 0 -10 -6 h-92 a10 10 0 0 0 -10 6 z" fill="#e9a3b8"/>
-        <rect x="14" y="8" width="84" height="36" rx="8" fill="#efb437"/>
-        <path d="M14 18 q10.5 9 21 0 t21 0 t21 0 t21 0 v-2 a8 8 0 0 0 -8 -8 h-68 a8 8 0 0 0 -8 8 z" fill="#fff4dc"/>
-        {[34, 56, 78].map((x, i) => (
-          <g key={x}>
-            <rect x={x - 2.5} y="-14" width="5" height="22" rx="2" fill={['#4f9d8a', '#e8735a', '#1f3b57'][i]}/>
-            <path className="flame" style={{animationDelay: `${i * 0.25}s`}} d={`M${x} -28 c5 6 5 11 0 13 c-5 -2 -5 -7 0 -13 z`} fill="#ffcc4d"/>
-          </g>
-        ))}
-        <rect x="-10" y="90" width="132" height="8" rx="4" fill="#d9b468"/>
-      </g>
-      {[[30, 150], [250, 140], [262, 214], [20, 222], [150, 20]].map(([x, y], i) => (
-        <path key={i} className="sparkle" style={{animationDelay: `${i * 0.4}s`}} d={`M${x} ${y - 8} l2.4 5.6 l5.6 2.4 l-5.6 2.4 l-2.4 5.6 l-2.4 -5.6 l-5.6 -2.4 l5.6 -2.4 z`} fill="#ffd476"/>
-      ))}
-    </svg>
   );
 }
