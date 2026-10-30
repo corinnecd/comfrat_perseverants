@@ -122,3 +122,5 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 
 .page-body .accueil-space-grid{margin-top:23px}
 .nav-locked{opacity:.62}.nav-locked .nav-lock{margin-left:auto;width:14px!important;height:14px!important;color:#dcb66b}.locked-view{display:grid;justify-items:center;text-align:center;gap:12px;padding:46px 28px;margin-top:6px}.locked-view h2{font:400 26px/1.2 Georgia,serif;color:#001b35}.locked-view p{max-width:520px;font-size:14px;color:#677583}.locked-icon{display:inline-flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:50%;background:#fbf1de;color:#9a650e}.locked-view .button-row{justify-content:center}
+.page-body .accueil-space-grid{grid-template-columns:minmax(0,1fr)}
+.page-body .accueil-present-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));column-gap:28px;max-height:none;padding-bottom:16px}
