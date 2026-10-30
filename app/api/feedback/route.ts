@@ -1,11 +1,12 @@
 import {getChatGPTUser} from '../../chatgpt-auth';
 import {db} from '../../../db/raw';
+import {isOwner,storedOwnerId} from '../../owner-access';
 import {ensureFeedbackTable} from '../../checkin-feedback';
 import {codeAttemptsLimited,feedbackCodeExists,grantFeedbackAccess,hasFeedbackAccess,recordCodeAttempt,revokeFeedbackAccess,saveFeedbackCode,ensureSimpleAccess,verifyFeedbackCode} from '../../feedback-access';
 
 export const dynamic='force-dynamic';
 const json=(data:unknown,status=200,headers:Record<string,string>={})=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...headers}});
-async function canSetCode(){const user=await getChatGPTUser();if(!user)return false;const owner=await db().prepare("SELECT value FROM settings WHERE key='owner'").first<{value:string}>();return owner?.value===user.userId;}
+async function canSetCode(){return isOwner(await getChatGPTUser(),await storedOwnerId());}
 
 export async function GET(req:Request){try{await ensureSimpleAccess();const configured=await feedbackCodeExists();if(!configured)return json({error:'Code d’accès à configurer.',setupRequired:true,canSetup:await canSetCode()},401);if(!await hasFeedbackAccess(req))return json({error:'Saisissez le code responsable pour lire ces partages.',setupRequired:false,canSetup:false},401);await ensureFeedbackTable();const rows=await db().prepare('SELECT c.*,p.first,p.last,p.status FROM checkin_feedback c JOIN people p ON p.id=c.person WHERE c.prayer_requested=1 OR c.testimony_requested=1 ORDER BY c.day DESC,c.created DESC').all();return json({feedback:rows.results});}catch(e){console.error(e);return json({error:'Les partages sont indisponibles. Réessayez.'},503);}}
 

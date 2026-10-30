@@ -1,11 +1,11 @@
 import {getChatGPTUser} from '../../chatgpt-auth';
-import {env} from 'cloudflare:workers';
 import {db} from '../../../db/raw';
+import {isOwner,ownerEmails,storedOwnerId} from '../../owner-access';
 import {ensureSimpleAccess,grantTeamAccess,hasTeamAccess,recordTeamCodeAttempt,revokeTeamAccess,saveTeamCode,teamCodeAttemptsLimited,teamCodeExists,verifyTeamCode} from '../../feedback-access';
 
 export const dynamic='force-dynamic';
 const json=(data:unknown,status=200,headers:Record<string,string>={})=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...headers}});
-async function setupAccess(){const user=await getChatGPTUser();const owner=await db().prepare("SELECT value FROM settings WHERE key='owner'").first<{value:string}>();const ownerEmail=(env as Cloudflare.Env&{COMFRAT_OWNER_EMAIL?:string}).COMFRAT_OWNER_EMAIL?.trim().toLowerCase();const emailMatches=!!user&&!!ownerEmail&&user.email.trim().toLowerCase()===ownerEmail;const canSetup=!!user&&(owner?.value===user.userId||emailMatches);const ownerStatus=!user?'sign_in_required':canSetup?'owner':!owner?.value&&!ownerEmail?'owner_not_configured':'different_account';return {canSetup,ownerStatus};}
+async function setupAccess(){const user=await getChatGPTUser();const ownerId=await storedOwnerId();const canSetup=isOwner(user,ownerId);const ownerStatus=!user?'sign_in_required':canSetup?'owner':!ownerId&&ownerEmails().length===0?'owner_not_configured':'different_account';return {canSetup,ownerStatus};}
 
 export async function GET(req:Request){try{await ensureSimpleAccess();const setupRequired=!await teamCodeExists();const setup=setupRequired?await setupAccess():{canSetup:false,ownerStatus:'not_needed'};return json({authorized:await hasTeamAccess(req),setupRequired,...setup});}catch(e){console.error(e);return json({error:'La vérification de l’accès est indisponible.'},503);}}
 
