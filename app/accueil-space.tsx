@@ -1,6 +1,6 @@
 'use client';
 import {useEffect, useState} from 'react';
-import {Baby, Cake, Check, Search, UserPlus, Users} from 'lucide-react';
+import {Baby, Cake, Check, MessageSquareWarning, Search, Send, UserPlus, Users} from 'lucide-react';
 import {CHILD_STATUS} from './data';
 import {dateLabel} from './dates';
 import type {Person} from './data';
@@ -22,6 +22,8 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
   const [day, setDay] = useState('');
   const [query, setQuery] = useState('');
   const [childFor, setChildFor] = useState<Light | null>(null);
+  const [fixFor, setFixFor] = useState<Light | null>(null);
+  const [fixText, setFixText] = useState('');
   const [child, setChild] = useState(emptyChild);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -69,7 +71,7 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
           <section className="card accueil-search-card">
             <div className="card-heading"><div><h2>Enregistrer une présence</h2><p>Rencontre du {day ? dateLabel(day, {weekday: 'long', day: 'numeric', month: 'long'}) : '…'}</p></div></div>
             <div className="accueil-search-body">
-              <label className="search"><Search size={16}/><input placeholder="Nom ou prénom…" value={query} onChange={(e) => { setQuery(e.target.value); setChildFor(null); }} aria-label="Rechercher une personne"/></label>
+              <label className="search"><Search size={16}/><input placeholder="Nom ou prénom…" value={query} onChange={(e) => { setQuery(e.target.value); setChildFor(null); setFixFor(null); }} aria-label="Rechercher une personne"/></label>
               {message && <p className="children-notice" role="status"><Check size={16}/> {message}</p>}
               {error && <p className="form-error" role="alert">{error}</p>}
               {matches.length > 0 && (
@@ -81,7 +83,7 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
                         {present.has(p.id)
                           ? <span className="children-present"><Check size={15}/> Présent·e</span>
                           : <button className="primary" disabled={busy} onClick={() => post({action: 'attend', id: p.id}, `${p.first} ${p.last} est enregistré·e.`)}><Check size={15}/> Présent·e</button>}
-                        {p.status !== CHILD_STATUS && <button className="secondary" onClick={() => { setChildFor(p); setChild({...emptyChild, last: p.last}); setMessage(''); }}><Baby size={15}/> Ajouter un enfant</button>}
+                        {p.status !== CHILD_STATUS && <button className="secondary" onClick={() => { setChildFor(p); setFixFor(null); setChild({...emptyChild, last: p.last}); setMessage(''); }}><Baby size={15}/> Ajouter un enfant</button>}<button className="secondary" onClick={() => { setFixFor(p); setChildFor(null); setFixText(''); setMessage(''); }}><MessageSquareWarning size={15}/> Signaler une correction</button>
                       </span>
                     </li>
                   ))}
@@ -89,6 +91,14 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
               )}
               {query.trim().length >= 2 && matches.length === 0 && <p className="accueil-hint">Aucune personne trouvée. Si c’est sa première visite, utilisez « Nouvelle inscription ».</p>}
               {!query && <p className="accueil-hint">Tapez au moins deux lettres du nom ou du prénom.</p>}
+              {fixFor && (
+                <form className="registration-form children-form accueil-child-form" onSubmit={async (e) => { e.preventDefault(); if (await post({action: 'requestCorrection', id: fixFor.id, message: fixText}, `Demande transmise aux responsables pour ${fixFor.first} ${fixFor.last}.`)) { setFixFor(null); setFixText(''); } }}>
+                  <h3><MessageSquareWarning size={17}/> Correction pour {fixFor.first} {fixFor.last}</h3>
+                  <label>Que faut-il corriger ?<textarea required maxLength={500} value={fixText} onChange={(e) => setFixText(e.target.value)} placeholder="Ex. : nouveau numéro 06…, nom mal orthographié, statut Membre…"/></label>
+                  <p className="accueil-hint">Un responsable vérifiera et appliquera la correction. Si la personne a son téléphone, elle peut aussi corriger elle-même avec « Modifier mes informations » après son scan.</p>
+                  <div className="button-row"><button className="primary" disabled={busy}><Send size={16}/> Transmettre</button><button type="button" className="secondary" onClick={() => setFixFor(null)}>Annuler</button></div>
+                </form>
+              )}
               {childFor && (
                 <form className="registration-form children-form accueil-child-form" onSubmit={addChild}>
                   <h3><Baby size={17}/> Enfant de {childFor.first} {childFor.last}</h3>
