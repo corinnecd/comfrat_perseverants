@@ -19,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body className="antialiased">{children}</body>
+    <html lang="fr" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{__html:"if(/[?&](token|session)=/.test(location.search))document.documentElement.classList.add('qr-arrival')"}}/><link rel="preload" as="image" href="/logo-perseverants.webp" type="image/webp"/><link rel="preload" as="image" href="/communion-fraternelle.webp" type="image/webp"/></head><body className="antialiased">{children}</body>
     </html>
   );
 }
