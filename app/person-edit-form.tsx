@@ -2,8 +2,8 @@
 import {useState} from 'react';
 import {Check} from 'lucide-react';
 import type {Person} from './data';
-import {PERSON_STATUSES} from './data';
-import {AGE_RANGES, BIRTH_MONTHS} from './person-details';
+import {ALL_STATUSES, CHILD_STATUS} from './data';
+import {AGE_RANGES, BIRTH_MONTHS, CHILD_AGE_RANGES} from './person-details';
 
 /** Formulaire de modification d'une fiche (équipe). Mêmes champs et mêmes contrôles que l'inscription. */
 export default function PersonEditForm({person, onSaved, onCancel}: {person: Person; onSaved: (updated: Person) => void; onCancel: () => void}) {
@@ -14,6 +14,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
     birthday_month: person.birthday_month ? String(person.birthday_month) : '',
     age_range: person.age_range || '',
   });
+  const isChild = values.status === CHILD_STATUS;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (key: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setValues((v) => ({...v, [key]: e.target.value}));
@@ -50,11 +51,11 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
     <form className="registration-form person-edit-form" onSubmit={save}>
       <div className="form-grid">
         {fields.map(([key, label, type, auto]) => (
-          <label key={key}>{label}<input type={type} required maxLength={200} autoComplete={auto} value={values[key]} onChange={set(key)}/></label>
+          <label key={key}>{key === 'phone' && isChild ? 'Téléphone (facultatif)' : key === 'email' && isChild ? 'E-mail du parent' : label}<input type={type} required={!(key === 'phone' && isChild)} maxLength={200} autoComplete={auto} value={values[key]} onChange={set(key)}/></label>
         ))}
       </div>
       <label>Statut
-        <select value={values.status} onChange={set('status')}>{PERSON_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+        <select value={values.status} onChange={set('status')}>{ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
       </label>
       {values.status === 'Invité' && <label>Invité·e par<input required maxLength={200} value={values.inviter} onChange={set('inviter')}/></label>}
       <div className="form-grid">
@@ -66,7 +67,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
         </label>
       </div>
       <label>Tranche d’âge
-        <select value={values.age_range} onChange={set('age_range')}><option value="">Non renseignée</option>{AGE_RANGES.map((a) => <option key={a} value={a}>{a}</option>)}</select>
+        <select value={values.age_range} onChange={set('age_range')}><option value="">Non renseignée</option>{(isChild ? CHILD_AGE_RANGES : AGE_RANGES).map((a) => <option key={a} value={a}>{a}</option>)}</select>
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">

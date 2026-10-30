@@ -3,6 +3,10 @@ import {lastCompletedSunday} from './meeting-calendar';
 export {parisDay,sunday,dateLabel} from './dates';
 export const PERSON_STATUSES = ['Pasteur', 'Pilier', 'Membre', 'Nouveau', 'NA', 'NC', 'Invité'];
 export const MEMBER_STATUSES = ['Membre', 'Pilier', 'Pasteur'];
+/** Statut réservé aux enfants de moins de 16 ans, enregistrés par un parent. */
+export const CHILD_STATUS = 'Enfant';
+/** Tous les statuts, pour l'équipe (filtres, modification d'une fiche). */
+export const ALL_STATUSES = [...PERSON_STATUSES, CHILD_STATUS];
 export type Person={id:string,first:string,last:string,email:string,phone:string,city:string,department:string,status:string,inviter:string,token:string,created:string,birthday_day?:number|null,birthday_month?:number|null,age_range?:string|null};
 export type Attendance={person:string,day:string,time:string,mode:string};
 export function indicator(p:Person,a:Attendance[],completedSunday=lastCompletedSunday()){const visits=a.filter(x=>x.person===p.id);const last=visits.map(x=>x.day).sort().at(-1);const missing=Math.max(0,Math.ceil((Date.parse(completedSunday)-Date.parse(last||p.created.slice(0,10)))/604800000));if(missing>=3)return {label:'Absent depuis 3 dimanches ou +',short:'3 dimanches ou +',color:'red'};if(missing>=2)return {label:'Absent depuis 2 dimanches',short:'2 dimanches',color:'orange'};if(p.status==='Invité'&&visits.length<=1)return {label:'Nouvel invité',short:'Nouvel invité',color:'purple'};if(missing>=1||['Nouveau','NA','NC','NA-NC'].includes(p.status))return {label:'À suivre',short:'À suivre',color:'yellow'};return {label:'Régulier',short:'Régulier',color:'green'};}
