@@ -132,3 +132,4 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 .stat-card>strong:has(.dual-stat){display:block;width:100%}
 .dual-stat{display:flex;width:100%;justify-content:space-between;align-items:flex-end;gap:12px}
 .dual-stat>i{margin:4px auto}
+.dual-stat{padding-right:22px}
