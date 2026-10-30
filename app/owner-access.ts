@@ -1,6 +1,7 @@
 import {getChatGPTUser, type ChatGPTUser} from './chatgpt-auth';
 import {env} from 'cloudflare:workers';
 import {db} from '../db/raw';
+import {VERCEL_OWNER_ID} from './owner-session';
 
 /**
  * E-mails autorisés comme propriétaires (création et modification des codes d'accès).
@@ -20,6 +21,8 @@ export function ownerEmails(): string[] {
 /** Vrai si ce compte connecté est le propriétaire enregistré ou figure dans la liste des e-mails propriétaires. */
 export function isOwner(user: ChatGPTUser | null, ownerId?: string | null): boolean {
   if (!user) return false;
+  // Session propriétaire Vercel : déjà vérifiée par la phrase secrète (cookie signé).
+  if (user.userId === VERCEL_OWNER_ID) return true;
   if (ownerId && ownerId === user.userId) return true;
   return ownerEmails().includes(user.email.trim().toLowerCase());
 }

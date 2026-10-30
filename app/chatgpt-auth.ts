@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ownerCookieValid, vercelMode, VERCEL_OWNER_ID } from "./owner-session";
 
 export type ChatGPTUser = {
   userId: string;
@@ -20,6 +21,12 @@ const CALLBACK_PATH = "/callback";
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
+  // Sur Vercel : pas de connexion ChatGPT, les en-têtes oai-* sont ignorés (ils pourraient être imités).
+  if (vercelMode()) {
+    return (await ownerCookieValid(requestHeaders.get("cookie")))
+      ? { userId: VERCEL_OWNER_ID, displayName: "Propriétaire", email: "proprietaire", fullName: null }
+      : null;
+  }
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
   if (!userId || !email) return null;

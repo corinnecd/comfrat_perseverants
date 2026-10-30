@@ -51,3 +51,6 @@ next-env.d.ts
 # Secrets locaux Cloudflare/Neon (ne jamais publier)
 .dev.vars
 .dev.vars.*
+
+# Sortie de construction Nitro (Vercel / Node)
+/.output/

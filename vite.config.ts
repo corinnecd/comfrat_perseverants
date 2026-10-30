@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import vinext from "vinext";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
@@ -35,7 +36,32 @@ const localBindingConfig = {
     : [],
 };
 
+/**
+ * Cible de construction :
+ *  - par défaut : Cloudflare Workers / OpenAI Sites (base D1), comme aujourd'hui ;
+ *  - Vercel : quand Vercel construit le site (variable VERCEL=1) ou avec COMFRAT_TARGET=vercel.
+ *    Le site passe alors par Nitro et utilise uniquement la base Neon (DATABASE_URL).
+ */
+const vercelTarget = process.env.VERCEL === "1" || process.env.COMFRAT_TARGET === "vercel";
+
 export default defineConfig(async () => {
+  if (vercelTarget) {
+    process.env.NITRO_PRESET ??= "vercel";
+    const { nitro } = await import("nitro/vite");
+    return {
+      resolve: {
+        alias: [
+          { find: "cloudflare:workers", replacement: fileURLToPath(new URL("./build/vercel-env-shim.ts", import.meta.url)) },
+          // Avec Nitro, les @import CSS de paquets ne sont pas résolus seuls : on pointe vers leurs fichiers CSS.
+          { find: /^tailwindcss$/, replacement: fileURLToPath(new URL("./node_modules/tailwindcss/index.css", import.meta.url)) },
+          { find: /^tw-animate-css$/, replacement: fileURLToPath(new URL("./node_modules/tw-animate-css/dist/tw-animate.css", import.meta.url)) },
+        ],
+      },
+      plugins: [vinext(), nitro()],
+    };
+  }
+
+
   // Use Miniflare's local Request.cf placeholder unless fetching is requested.
   process.env.CLOUDFLARE_CF_FETCH_ENABLED ??= "false";
   process.env.WRANGLER_SEND_METRICS ??= "false";

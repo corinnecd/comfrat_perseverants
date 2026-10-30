@@ -10,5 +10,9 @@ declare namespace Cloudflare {
     COMFRAT_OWNER_EMAILS?: string;
     /** Ancien réglage (un seul e-mail), toujours accepté. */
     COMFRAT_OWNER_EMAIL?: string;
+    /** Défini par Vercel ("1") : le site tourne sur Vercel, sans D1 ni connexion ChatGPT. */
+    VERCEL?: string;
+    /** Vercel uniquement : phrase secrète du propriétaire (16 caractères minimum), saisie sur /signin-with-chatgpt. */
+    COMFRAT_OWNER_SECRET?: string;
   }
 }
