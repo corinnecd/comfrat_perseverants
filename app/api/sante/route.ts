@@ -1,5 +1,6 @@
 import {db} from '../../../db/raw';
 import {appEnv} from '../../env';
+import {getCheckinWindow} from '../../checkin-session';
 import {ownerSecretConfigured} from '../../owner-session';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,7 @@ export async function GET() {
   return Response.json({
     base,
     phraseSecreteProprietaire: ownerSecretConfigured() ? 'réglée' : 'manquante (COMFRAT_OWNER_SECRET, 16 caractères minimum)',
-    qrEssaiOuvert: appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1',
+    qrEssaiOuvert: appEnv().VERCEL_ENV !== 'production' && appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1',
+    qrOuvertMaintenant: getCheckinWindow().active,
   }, {headers: {'Cache-Control': 'no-store', 'Content-Type': 'application/json; charset=utf-8'}});
 }

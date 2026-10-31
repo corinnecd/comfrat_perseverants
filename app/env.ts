@@ -7,8 +7,10 @@ export type AppEnv = {
   DATABASE_URL?: string;
   /** Phrase secrète du propriétaire (16 caractères minimum) : création et modification des codes d'accès. */
   COMFRAT_OWNER_SECRET?: string;
-  /** Essais uniquement : "1" ouvre le QR du dimanche à tout moment. Ne pas régler en production. */
+  /** Essais uniquement : "1" ouvre le QR du dimanche à tout moment (ignoré sur le site public). */
   COMFRAT_TEST_CHECKIN_OPEN?: string;
+  /** Défini par Vercel : "production", "preview" ou "development". */
+  VERCEL_ENV?: string;
 };
 
 export function appEnv(): AppEnv {

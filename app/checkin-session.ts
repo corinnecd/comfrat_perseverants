@@ -5,11 +5,14 @@ import {parisDay, sunday} from './dates';
 
 /**
  * Ouverture du QR pour les ESSAIS uniquement : active si COMFRAT_TEST_CHECKIN_OPEN=1
- * (fichier .env.local, ou variable « Preview » dans Vercel).
+ * (fichier .env.local, ou variable « Preview » dans Vercel). Ignorée sur le site public (VERCEL_ENV=production).
  * Sans cette variable, l'horaire normal s'applique : samedi 18 h – lundi 22 h.
  */
 function testOpeningEnabled() {
-  return appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1';
+  const e = appEnv();
+  // Jamais sur le site public : là, le QR suit toujours l'horaire (samedi 18 h – lundi 22 h).
+  if (e.VERCEL_ENV === 'production') return false;
+  return e.COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1';
 }
 
 export function getCheckinWindow(now = new Date()) {
