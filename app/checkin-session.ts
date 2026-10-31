@@ -8,16 +8,13 @@ import {parisDay, sunday} from './dates';
  * (fichier .env.local, ou variable « Preview » dans Vercel).
  * Sans cette variable, l'horaire normal s'applique : samedi 22 h – lundi 22 h.
  */
-/** Ouverture d'essai ponctuelle (31 octobre 2026) : jusqu'à 22 h, heure où l'ouverture normale prend le relais. */
-const TEST_OPEN_UNTIL = Date.parse('2026-10-31T21:00:00Z');
-
-function testOpeningEnabled(now = new Date()) {
-  return appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1' || now.getTime() < TEST_OPEN_UNTIL;
+function testOpeningEnabled() {
+  return appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1';
 }
 
 export function getCheckinWindow(now = new Date()) {
   const window = calendarWindow(now);
-  if (window.active || !testOpeningEnabled(now)) return window;
+  if (window.active || !testOpeningEnabled()) return window;
   const today = parisDay(now);
   const isSunday = new Date(`${today}T12:00:00Z`).getUTCDay() === 0;
   const meetingDay = isSunday ? today : sunday(1, today);
