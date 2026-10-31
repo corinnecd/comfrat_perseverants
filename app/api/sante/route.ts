@@ -19,5 +19,5 @@ export async function GET() {
     base,
     phraseSecreteProprietaire: ownerSecretConfigured() ? 'réglée' : 'manquante (COMFRAT_OWNER_SECRET, 16 caractères minimum)',
     qrEssaiOuvert: appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1',
-  }, {headers: {'Cache-Control': 'no-store'}});
+  }, {headers: {'Cache-Control': 'no-store', 'Content-Type': 'application/json; charset=utf-8'}});
 }
