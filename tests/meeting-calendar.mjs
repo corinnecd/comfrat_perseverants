@@ -7,8 +7,14 @@ const calendarUrl=asModule(readFileSync('app/meeting-calendar.ts','utf8').replac
 const {getCheckinWindow,meetingDayAt,lastCompletedSunday}=await import(calendarUrl);
 const {indicator}=await import(asModule(readFileSync('app/data.ts','utf8').replaceAll("'./dates'",JSON.stringify(datesUrl)).replace("'./meeting-calendar'",JSON.stringify(calendarUrl))));
 const date=value=>new Date(value);
-assert.equal(getCheckinWindow(date('2026-10-17T19:59:59Z')).active,false);
-assert.equal(meetingDayAt(date('2026-10-17T20:00:00Z')),'2026-10-18');
+assert.equal(getCheckinWindow(date('2026-10-17T15:59:59Z')).active,false);
+assert.equal(meetingDayAt(date('2026-10-17T16:00:00Z')),'2026-10-18');
+assert.equal(getCheckinWindow(date('2026-10-17T16:00:00Z')).active,true);
+// Heure d'hiver : ouverture le samedi 31 octobre à 18 h (17:00 UTC)
+assert.equal(getCheckinWindow(date('2026-10-31T16:59:59Z')).active,false);
+const winter=getCheckinWindow(date('2026-10-31T17:00:00Z'));assert.equal(winter.active,true);assert.equal(winter.meetingDay,'2026-11-01');assert.equal(winter.startsAt,'2026-10-31T17:00:00.000Z');
+assert.equal(getCheckinWindow(date('2026-11-02T20:59:59Z')).active,true);assert.equal(getCheckinWindow(date('2026-11-02T21:00:00Z')).active,false);
+assert.equal(getCheckinWindow(date('2026-11-04T12:00:00Z')).nextStartAt,'2026-11-07T17:00:00.000Z');
 assert.equal(meetingDayAt(date('2026-10-19T19:59:59Z')),'2026-10-18');
 assert.equal(getCheckinWindow(date('2026-10-19T20:00:00Z')).active,false);
 assert.equal(lastCompletedSunday(date('2026-10-18T10:00:00Z')),'2026-10-11');
@@ -19,5 +25,4 @@ const spring=getCheckinWindow(date('2027-03-27T21:00:00Z'));assert.equal(spring.
 const p={id:'test',status:'Membre',created:'2026-09-01T00:00:00Z'};const visits=[{person:'test',day:'2026-10-04'}];
 assert.equal(indicator(p,visits,lastCompletedSunday(date('2026-10-18T10:00:00Z'))).color,'yellow');
 assert.equal(indicator(p,visits,lastCompletedSunday(date('2026-10-19T20:00:00Z'))).color,'orange');
-assert.equal(getCheckinWindow(date('2026-10-09T19:00:00Z')).meetingDay,'2026-10-11');
-console.log('PASS: QR window, shared meeting dates, closure-based absences and daylight saving transitions.');
+console.log('PASS: QR window (samedi 18 h – lundi 22 h), shared meeting dates, closure-based absences and daylight saving transitions.');

@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       if (typeof b.id !== 'string') return json({error: 'Enfant introuvable.'}, 400);
       const link = await d.prepare('SELECT child FROM person_parents WHERE child=? AND parent=?').bind(b.id, parent.id).first<{child: string}>();
       if (!link) return json({error: 'Enfant introuvable.'}, 404);
-      if (!day) return json({error: 'La présence s’enregistre du samedi 22 h au lundi 22 h.'}, 410);
+      if (!day) return json({error: 'La présence s’enregistre du samedi 18 h au lundi 22 h.'}, 410);
       await markPresent(b.id, day);
       return json({ok: true, children: await listChildren(parent.id, day)});
     }

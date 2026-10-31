@@ -65,7 +65,7 @@ export default function ChildrenPresence({token}: {token: string}) {
           ))}
         </ul>
       )}
-      {!meetingOpen && <p className="children-intro">La présence des enfants s’enregistre du samedi 22 h au lundi 22 h.</p>}
+      {!meetingOpen && <p className="children-intro">La présence des enfants s’enregistre du samedi 18 h au lundi 22 h.</p>}
       {notice && <p className="children-notice" role="status"><Check size={16}/> {notice}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {adding ? (

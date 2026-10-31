@@ -6,7 +6,7 @@ import {parisDay, sunday} from './dates';
 /**
  * Ouverture du QR pour les ESSAIS uniquement : active si COMFRAT_TEST_CHECKIN_OPEN=1
  * (fichier .env.local, ou variable « Preview » dans Vercel).
- * Sans cette variable, l'horaire normal s'applique : samedi 22 h – lundi 22 h.
+ * Sans cette variable, l'horaire normal s'applique : samedi 18 h – lundi 22 h.
  */
 function testOpeningEnabled() {
   return appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1';

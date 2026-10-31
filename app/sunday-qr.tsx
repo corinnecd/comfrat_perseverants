@@ -34,7 +34,7 @@ function useSundayQr() {
   return {session, image};
 }
 
-const nextOpening = (s: Session | null) => s?.nextStartAt ? `Ouvre le ${dateLabel(s.nextStartAt.slice(0, 10), {weekday: 'long', day: 'numeric', month: 'long'})} à 22 h` : 'Ouvre le samedi à 22 h';
+const nextOpening = (s: Session | null) => s?.nextStartAt ? `Ouvre le ${dateLabel(s.nextStartAt.slice(0, 10), {weekday: 'long', day: 'numeric', month: 'long'})} à 18 h` : 'Ouvre le samedi à 18 h';
 
 /** Option A : mini-QR du menu latéral, visible sur toutes les pages. */
 export function SundayQrMini() {
