@@ -3,10 +3,7 @@ import {useState} from 'react';
 import {ArrowLeft, LockKeyhole} from 'lucide-react';
 import PasswordInput from '../password-input';
 
-/**
- * Vercel : connexion du propriétaire par phrase secrète (COMFRAT_OWNER_SECRET).
- * Sur OpenAI Sites, cette adresse est la connexion ChatGPT, traitée par la plateforme avant le site.
- */
+/** Connexion du propriétaire par phrase secrète (COMFRAT_OWNER_SECRET). */
 export default function OwnerSignIn() {
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);

@@ -1,37 +1,33 @@
-import { env } from 'cloudflare:workers';
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import { appEnv } from '../app/env';
 
 /**
- * Accès à la base de données.
+ * Accès à la base de données Neon (PostgreSQL).
  *
- * - Si la variable `DATABASE_URL` est définie (fichier local `.dev.vars` pendant
- *   les essais), les requêtes passent par Neon (PostgreSQL) via un adaptateur
- *   qui imite l'API Cloudflare D1.
- * - Sinon, l'application utilise D1 exactement comme avant. C'est le cas en
- *   production tant que rien n'est configuré.
- *
- * Le reste du code continue d'appeler `db().prepare(...).bind(...).first()`,
- * `.all()`, `.run()` et `db().batch([...])` sans modification.
+ * Le code du site écrit ses requêtes avec des marqueurs `?` et appelle
+ * `db().prepare(...).bind(...).first()`, `.all()`, `.run()` et `db().batch([...])`.
+ * L'adaptateur ci-dessous traduit ces appels pour Neon.
+ * La chaîne de connexion vient de la variable `DATABASE_URL` (Vercel ou `.env.local`).
  */
-export function db(): D1Database {
-  const url = (env as Cloudflare.Env).DATABASE_URL?.trim();
-  if (url) return neonAsD1(url);
-  if (!env.DB) throw new Error('Base indisponible');
-  return env.DB;
+export function db(): Db {
+  const url = appEnv().DATABASE_URL?.trim();
+  if (!url) throw new Error('DATABASE_URL manquante : réglez la chaîne de connexion Neon (Vercel ou .env.local).');
+  return neonDb(url);
 }
 
-/** Indique quelle base est utilisée (utile pour les vérifications locales). */
-export function dbKind(): 'neon' | 'd1' {
-  return (env as Cloudflare.Env).DATABASE_URL?.trim() ? 'neon' : 'd1';
-}
+export type DbResult<T = Record<string, unknown>> = ReturnType<typeof toResult<T>>;
+export type Db = {
+  prepare: (query: string) => NeonStatement;
+  batch: (statements: NeonStatement[]) => Promise<DbResult[]>;
+};
 
 // ---------------------------------------------------------------------------
-// Adaptateur Neon → interface D1
+// Adaptateur Neon
 // ---------------------------------------------------------------------------
 
-let cached: { url: string; adapter: D1Database } | null = null;
+let cached: { url: string; adapter: Db } | null = null;
 
-function neonAsD1(url: string): D1Database {
+function neonDb(url: string): Db {
   if (cached?.url === url) return cached.adapter;
   const sql: Sql = neon(url, { fullResults: true });
   const adapter = {
@@ -40,25 +36,16 @@ function neonAsD1(url: string): D1Database {
       const results = await sql.transaction(
         statements.map((s) => sql.query(s.text, s.params)),
       );
-      return results.map((r) => toD1Result(r.rows, r.rowCount));
-    },
-    exec: () => {
-      throw new Error('exec() non pris en charge avec Neon');
-    },
-    dump: () => {
-      throw new Error('dump() non pris en charge avec Neon');
-    },
-    withSession: () => {
-      throw new Error('withSession() non pris en charge avec Neon');
+      return results.map((r) => toResult(r.rows as Record<string, unknown>[], r.rowCount));
     },
   };
-  cached = { url, adapter: adapter as unknown as D1Database };
+  cached = { url, adapter };
   return cached.adapter;
 }
 
 type Sql = NeonQueryFunction<false, true>;
 
-class NeonStatement {
+export class NeonStatement {
   readonly text: string;
 
   constructor(
@@ -90,12 +77,12 @@ class NeonStatement {
 
   async all<T = Record<string, unknown>>() {
     const { rows, rowCount } = await this.exec();
-    return toD1Result(rows as T[], rowCount);
+    return toResult(rows as T[], rowCount);
   }
 
   async run<T = Record<string, unknown>>() {
     const { rows, rowCount } = await this.exec();
-    return toD1Result(rows as T[], rowCount);
+    return toResult(rows as T[], rowCount);
   }
 
   async raw<T = unknown[]>(): Promise<T[]> {
@@ -104,7 +91,7 @@ class NeonStatement {
   }
 }
 
-function toD1Result<T>(rows: T[], rowCount: number | null) {
+function toResult<T>(rows: T[], rowCount: number | null) {
   return {
     success: true as const,
     results: rows,
@@ -157,7 +144,7 @@ export function toPostgresPlaceholders(query: string): string {
   return out;
 }
 
-/** Vrai si l'erreur vient d'une contrainte d'unicité (SQLite/D1 ou PostgreSQL/Neon). */
+/** Vrai si l'erreur vient d'une contrainte d'unicité (PostgreSQL code 23505). */
 export function isUniqueViolation(error: unknown): boolean {
   const text = String((error as {message?: string})?.message ?? error);
   const code = (error as {code?: string})?.code;

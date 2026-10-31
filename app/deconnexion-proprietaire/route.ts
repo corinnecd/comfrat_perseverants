@@ -2,10 +2,7 @@ import {clearOwnerCookie} from '../owner-session';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Vercel : ferme la session propriétaire puis revient à la page demandée.
- * (Sur OpenAI Sites, la plateforme traite elle-même cette adresse avant le site.)
- */
+/** Ferme la session propriétaire puis revient à la page demandée. */
 export function GET(req: Request) {
   const url = new URL(req.url);
   const back = url.searchParams.get('return_to') || '/';

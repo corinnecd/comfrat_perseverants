@@ -1,14 +1,13 @@
-import {checkOwnerSecret, ownerCookie, ownerSecretConfigured, vercelMode} from '../../owner-session';
+import {checkOwnerSecret, ownerCookie, ownerSecretConfigured} from '../../owner-session';
 
 export const dynamic = 'force-dynamic';
 const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => Response.json(data, {status, headers: {'Cache-Control': 'no-store', ...headers}});
 
-/** Vercel uniquement : vérifie la phrase secrète du propriétaire et ouvre une session de 12 h. */
+/** Vérifie la phrase secrète du propriétaire et ouvre une session de 12 h. */
 export async function POST(req: Request) {
   try {
-    if (!vercelMode()) return json({error: 'Sur cet hébergement, connectez-vous avec votre compte ChatGPT.'}, 404);
     if (req.headers.get('origin') !== new URL(req.url).origin) return new Response(null, {status: 403});
-    if (!ownerSecretConfigured()) return json({error: 'La phrase secrète du propriétaire n’est pas encore réglée dans Vercel (COMFRAT_OWNER_SECRET).'}, 503);
+    if (!ownerSecretConfigured()) return json({error: 'La phrase secrète du propriétaire n’est pas encore réglée (variable COMFRAT_OWNER_SECRET dans Vercel ou .env.local).'}, 503);
     const body = (await req.json()) as {secret?: unknown};
     if (!(await checkOwnerSecret(body.secret))) {
       await new Promise((r) => setTimeout(r, 800));

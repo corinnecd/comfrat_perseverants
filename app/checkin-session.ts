@@ -1,18 +1,15 @@
-import { env } from 'cloudflare:workers';
+import { appEnv } from './env';
 import { db } from '../db/raw';
 import {getCheckinWindow as calendarWindow, utcAtParis, meetingDayAt} from './meeting-calendar';
 import {parisDay, sunday} from './dates';
 
 /**
- * Ouverture du QR pour les ESSAIS uniquement.
- * Active seulement si les DEUX variables sont présentes (fichier local .dev.vars) :
- *   - COMFRAT_TEST_CHECKIN_OPEN=1
- *   - DATABASE_URL (base Neon d'essais)
- * La production n'a ni l'une ni l'autre : son horaire samedi 22 h – lundi 22 h reste inchangé.
+ * Ouverture du QR pour les ESSAIS uniquement : active si COMFRAT_TEST_CHECKIN_OPEN=1
+ * (fichier .env.local, ou variable « Preview » dans Vercel).
+ * Sans cette variable, l'horaire normal s'applique : samedi 22 h – lundi 22 h.
  */
 function testOpeningEnabled() {
-  const e = env as Cloudflare.Env;
-  return e.COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1' && !!e.DATABASE_URL?.trim();
+  return appEnv().COMFRAT_TEST_CHECKIN_OPEN?.trim() === '1';
 }
 
 export function getCheckinWindow(now = new Date()) {

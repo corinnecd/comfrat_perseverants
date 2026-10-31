@@ -1,20 +1,15 @@
-import {env} from 'cloudflare:workers';
+import {appEnv} from './env';
 
 /**
- * Connexion propriétaire quand le site tourne sur Vercel.
- * Sur OpenAI Sites, le propriétaire se connecte avec son compte ChatGPT (en-têtes ajoutés par la plateforme).
- * Sur Vercel, ces en-têtes n'existent pas et pourraient être imités : ils sont donc ignorés, et le propriétaire
- * saisit une phrase secrète (COMFRAT_OWNER_SECRET, réglée dans Vercel, jamais dans le code).
+ * Connexion du propriétaire (création et modification des codes d'accès).
+ * Le propriétaire saisit une phrase secrète (COMFRAT_OWNER_SECRET, réglée dans Vercel, jamais dans le code).
  * Une fois la phrase vérifiée, un cookie signé (HttpOnly, 12 h) le reconnaît.
  */
 export const OWNER_COOKIE = 'comfrat_owner';
-export const VERCEL_OWNER_ID = 'vercel-owner';
 const MAX_AGE = 12 * 3600;
 
-const e = () => env as Cloudflare.Env;
-export const vercelMode = () => e().VERCEL === '1';
 function secret() {
-  const s = e().COMFRAT_OWNER_SECRET?.trim();
+  const s = appEnv().COMFRAT_OWNER_SECRET?.trim();
   return s && s.length >= 16 ? s : null;
 }
 export const ownerSecretConfigured = () => !!secret();

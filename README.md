@@ -4,24 +4,40 @@ Application mobile-first de gestion des présences et d’accueil de la Com’Fr
 
 ## Fonctionnalités
 
-- Inscription des membres, nouveaux, NA, NC et invités.
-- Confirmation de présence avec QR personnel, tablette d’accueil ou saisie par l’équipe.
-- Fiches individuelles, historique des présences, statistiques et suivi des personnes à recontacter.
-- Tableau de bord réservé aux responsables.
+- Inscription des membres, nouveaux, NA, NC, invités et enfants.
+- Présence par QR du dimanche (ouvert du samedi 22 h au lundi 22 h), QR personnel ou saisie par l’équipe.
+- Espace responsables : fiches, historique, statistiques, récap, personnes à recontacter, anniversaires, effectif adulte et taux de présence.
+- Espace accueil (bénévoles) : présences, ajout d’enfants, demandes de correction, sans accès aux données personnelles.
+- Prières et témoignages protégés par leur propre code.
+
+## Hébergement
+
+- **Site** : Vercel (construction Vinext + Nitro, réglée dans `vercel.json`).
+- **Base de données** : Neon (PostgreSQL), via la variable `DATABASE_URL`.
+  Les tables sont créées automatiquement au premier usage ; le schéma de référence est dans `db/neon/`.
+
+## Variables d’environnement
+
+À régler dans Vercel → *Settings → Environment Variables* (jamais dans le code) :
+
+| Variable | Rôle |
+| --- | --- |
+| `DATABASE_URL` | Chaîne de connexion Neon. Obligatoire. |
+| `COMFRAT_OWNER_SECRET` | Phrase secrète du propriétaire (16 caractères minimum), saisie sur `/connexion-proprietaire` pour créer ou modifier les codes d’accès. |
+| `COMFRAT_TEST_CHECKIN_OPEN` | Essais uniquement : `1` ouvre le QR du dimanche à tout moment. À ne pas régler en production. |
 
 ## Développement local
 
 Prérequis : Node.js 22.13 ou plus récent.
 
+1. Créer un fichier `.env.local` (ignoré par Git) contenant les variables ci-dessus, avec une branche Neon d’essai.
+2. Lancer :
+
 ```sh
 npm ci
-npm run dev
+npm run dev          # http://localhost:5173
 ```
 
-L’application utilise le starter Vinext et une base Cloudflare D1. Le schéma est défini dans `db/schema.ts`, avec sa migration initiale dans `drizzle/`. Pour initialiser une base locale, générer le Worker puis appliquer la migration avec Wrangler en mode local.
+Pour tester sur un téléphone du même réseau : `npm run dev -- --host 0.0.0.0`.
 
-## Déploiement
-
-Le projet est configuré pour Cloudflare Sites avec une liaison D1 nommée `DB`, déclarée dans `.openai/hosting.json`. Les secrets d’authentification sont gérés par la plateforme ; aucune clé secrète ne doit être ajoutée au dépôt.
-
-Les vérifications des parcours locaux sont disponibles dans `tests/check-flows.mjs`.
+Construction de production locale : `npm run build` puis `npm start`.
