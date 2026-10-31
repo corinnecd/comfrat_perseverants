@@ -141,3 +141,4 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 .headcount-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.headcount-actions .headcount-alert,.headcount-actions .headcount-link{margin-top:10px}
 .stat-card>.headcount-alert,.stat-card>.headcount-link{display:flex;width:fit-content;max-width:100%;clear:both}.stat-card>.headcount-actions{display:flex;margin-top:2px}.stat-card>.headcount-form{display:grid}
 .stat-card .headcount-alert,.stat-card .headcount-link{border-radius:10px;line-height:1.3;text-align:left}
+.not-me{display:block;margin:14px auto 0;font-size:13px;color:#7a6a4f;text-decoration:underline;text-underline-offset:3px;background:none;border:0;cursor:pointer}
