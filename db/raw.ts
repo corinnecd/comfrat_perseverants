@@ -1,5 +1,6 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import { appEnv } from '../app/env';
+import { SCHEMA } from './schema';
 
 /**
  * Accès à la base de données Neon (PostgreSQL).
@@ -27,12 +28,34 @@ export type Db = {
 
 let cached: { url: string; adapter: Db } | null = null;
 
+/**
+ * Crée les tables manquantes au premier accès (instructions « IF NOT EXISTS », sans effet sur l'existant).
+ * Une seule fois par instance du serveur ; en cas d'échec, on réessaiera à la requête suivante.
+ */
+function schemaReady(sql: Sql) {
+  if (!schemaPromise) {
+    schemaPromise = (async () => {
+      try {
+        await sql.transaction(SCHEMA.map((q) => sql.query(q)));
+      } catch (error) {
+        // Deux instances qui créent les mêmes tables en même temps : la seconde peut échouer, on vérifie une fois de plus.
+        await new Promise((r) => setTimeout(r, 300));
+        await sql.transaction(SCHEMA.map((q) => sql.query(q))).catch(() => { throw error; });
+      }
+    })().catch((error) => { schemaPromise = null; throw error; });
+  }
+  return schemaPromise;
+}
+let schemaPromise: Promise<void> | null = null;
+
 function neonDb(url: string): Db {
   if (cached?.url === url) return cached.adapter;
   const sql: Sql = neon(url, { fullResults: true });
+  schemaPromise = null;
   const adapter = {
     prepare: (query: string) => new NeonStatement(sql, query, []),
     batch: async (statements: NeonStatement[]) => {
+      await schemaReady(sql);
       const results = await sql.transaction(
         statements.map((s) => sql.query(s.text, s.params)),
       );
@@ -64,7 +87,8 @@ export class NeonStatement {
     );
   }
 
-  private exec() {
+  private async exec() {
+    await schemaReady(this.sql);
     return this.sql.query(this.text, this.params);
   }
 

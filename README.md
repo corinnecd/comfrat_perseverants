@@ -14,7 +14,8 @@ Application mobile-first de gestion des présences et d’accueil de la Com’Fr
 
 - **Site** : Vercel (construction Vinext + Nitro, réglée dans `vercel.json`).
 - **Base de données** : Neon (PostgreSQL), via la variable `DATABASE_URL`.
-  Les tables sont créées automatiquement au premier usage ; le schéma de référence est dans `db/neon/`.
+  Toutes les tables sont créées automatiquement au premier accès (`db/schema.ts`, sans toucher aux données existantes).
+  Diagnostic de configuration : `/api/sante`.
 
 ## Variables d’environnement
 
