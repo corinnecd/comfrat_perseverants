@@ -145,3 +145,4 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 .parent-label{font-weight:500;color:#8a7a5c;margin-left:4px;font-size:.92em}
 .page-footer{justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 12px;text-align:center}
 .page-footer>span:first-child::after{content:"·";margin-left:12px;letter-spacing:0}
+.welcome-card>p.welcome-verse{font-family:Georgia,serif;font-style:italic;color:#5b6b7b;font-size:16px;line-height:1.6;margin:18px 0 4px}.welcome-card>p.welcome-verse cite{display:block;font-style:normal;font-size:12px;letter-spacing:1.4px;font-weight:650;color:#9a6510;text-transform:uppercase;margin-top:10px}
