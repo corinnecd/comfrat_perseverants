@@ -1,0 +1,13 @@
+{
+  "name": "COM’FRAT — Les Persévérants",
+  "short_name": "COM’FRAT",
+  "description": "Chaque présence compte. Accueil et suivi de la Com’Frat Les Persévérants.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f0e5",
+  "theme_color": "#001b35",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

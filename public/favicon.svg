@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#001b35"/><text x="32" y="46" font-family="Georgia" font-weight="bold" font-size="42" text-anchor="middle" fill="#efb437">P</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#f8f0e5"/>
+  <rect x="4" y="4" width="56" height="56" rx="10" fill="none" stroke="#efb437" stroke-width="1.5"/>
+  <!-- Croix centrée, inspirée du logo -->
+  <g fill="#8a5a1f">
+    <rect x="28" y="14" width="8" height="34" rx="1.5"/>
+    <rect x="18" y="22" width="28" height="7" rx="1.5"/>
+  </g>
+  <!-- Lauriers simplifiés sous la croix -->
+  <path d="M 18 52 Q 22 48 32 48 Q 42 48 46 52" stroke="#efb437" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>
