@@ -22,4 +22,7 @@ export const SCHEMA: string[] = [
   "CREATE TABLE IF NOT EXISTS accueil_access_sessions (\n  token_hash TEXT PRIMARY KEY NOT NULL,\n  expires_at TEXT NOT NULL,\n  created_at TEXT NOT NULL\n)",
   "CREATE TABLE IF NOT EXISTS correction_requests (\n  id       TEXT PRIMARY KEY NOT NULL,\n  person   TEXT NOT NULL REFERENCES people (id),\n  message  TEXT NOT NULL,\n  created  TEXT NOT NULL,\n  resolved TEXT\n)",
   "CREATE TABLE IF NOT EXISTS family_headcount (\n  day     TEXT PRIMARY KEY NOT NULL,\n  adults  INTEGER NOT NULL,\n  updated TEXT NOT NULL\n)",
+  "CREATE TABLE IF NOT EXISTS events (\n  id        TEXT PRIMARY KEY NOT NULL,\n  name      TEXT NOT NULL,\n  day       TEXT NOT NULL,\n  opens_at  TEXT NOT NULL,\n  closes_at TEXT NOT NULL,\n  token     TEXT NOT NULL UNIQUE,\n  created   TEXT NOT NULL\n)",
+  "CREATE TABLE IF NOT EXISTS event_attendance (\n  event  TEXT NOT NULL REFERENCES events (id),\n  person TEXT NOT NULL REFERENCES people (id),\n  time   TEXT NOT NULL,\n  mode   TEXT NOT NULL,\n  PRIMARY KEY (event, person)\n)",
+  "CREATE INDEX IF NOT EXISTS event_attendance_person ON event_attendance (person)",
 ];

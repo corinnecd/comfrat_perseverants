@@ -16,14 +16,15 @@ const hour = (iso: string) => {
  * Export de la liste des présents d'une rencontre (responsables uniquement) :
  * copier, e-mail, WhatsApp, partager, imprimer / PDF et fichier Excel (CSV).
  */
-export default function PresenceExport({day, rows}: {day: string; rows: PresenceRow[]}) {
+export default function PresenceExport({day, rows, label}: {day: string; rows: PresenceRow[]; label?: string}) {
+  const what = label ? `« ${label} »` : 'la rencontre';
   const [notice, setNotice] = useState('');
   const sorted = [...rows].sort((a, b) => a.last.localeCompare(b.last, 'fr') || a.first.localeCompare(b.first, 'fr'));
   const kids = sorted.filter((r) => r.status === 'Enfant').length;
   const dayText = day ? dateLabel(day, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) : '';
   const totalText = `${sorted.length} présent${sorted.length > 1 ? 's' : ''}${kids ? ` dont ${kids} enfant${kids > 1 ? 's' : ''}` : ''}`;
 
-  const text = `COM’FRAT — Les Persévérants\nPrésents à la rencontre du ${dayText}\n${totalText}\n\n` +
+  const text = `COM’FRAT — Les Persévérants\nPrésents à ${what} du ${dayText}\n${totalText}\n\n` +
     sorted.map((r, i) => `${i + 1}. ${r.first} ${r.last} — ${r.status}${r.parent ? ` (Parent : ${r.parent})` : ''}`).join('\n');
 
   const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 4000); };
@@ -38,17 +39,17 @@ export default function PresenceExport({day, rows}: {day: string; rows: Presence
     const body = `<table><thead><tr><th>#</th><th>Nom</th><th>Statut</th><th>Arrivée</th></tr></thead><tbody>` +
       sorted.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${hour(r.time)}</td></tr>`).join('') +
       `</tbody></table><p class="total">${totalText}</p>`;
-    if (!openPrintWindow('Présents à la rencontre', dayText, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
+    if (!openPrintWindow(label ? `Présents — ${label}` : 'Présents à la rencontre', dayText, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
   function excel() {
-    downloadCsv(`presents-${day}.csv`, [
+    downloadCsv(`presents-${label ? label.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' : ''}${day}.csv`, [
       ['Prénom', 'Nom', 'Statut', 'Parent', 'Heure d’arrivée', 'Enregistré par'],
       ...sorted.map((r) => [r.first, r.last, r.status, r.parent, hour(r.time), r.mode]),
     ]);
   }
 
   const empty = sorted.length === 0;
-  const mailto = `mailto:?subject=${encodeURIComponent('Présents COM’FRAT — ' + dayText)}&body=${encodeURIComponent(text)}`;
+  const mailto = `mailto:?subject=${encodeURIComponent((label ? 'Présents ' + label : 'Présents COM’FRAT') + ' — ' + dayText)}&body=${encodeURIComponent(text)}`;
   const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
 
   return (

@@ -8,7 +8,9 @@ Application mobile-first de gestion des présences et d’accueil de la Com’Fr
 - Présence par QR du dimanche (ouvert du samedi 18 h au lundi 22 h), QR personnel ou saisie par l’équipe.
 - Espace responsables : fiches, historique, statistiques, récap, personnes à recontacter, anniversaires, effectif adulte et taux de présence.
 - Espace accueil (bénévoles) : présences, ajout d’enfants, demandes de correction, sans accès aux données personnelles.
-- Prières et témoignages protégés par leur propre code.
+- Prières et témoignages protégés par leur propre code, exportables (copie, e-mail, WhatsApp, PDF).
+- Événements ponctuels (culte du matin, service…) : QR, scan et liste de présents propres à chaque événement, à part des statistiques de la Com’Frat.
+- Exports de la liste des présents (copie, e-mail, WhatsApp, PDF, Excel) et récap des statistiques pour n’importe quelle rencontre passée.
 
 ## Hébergement
 
