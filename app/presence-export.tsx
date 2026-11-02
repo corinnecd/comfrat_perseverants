@@ -42,7 +42,7 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
     if (!openPrintWindow(label ? `Présents — ${label}` : 'Présents à la rencontre', dayText, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
   function excel() {
-    downloadCsv(`presents-${label ? label.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' : ''}${day}.csv`, [
+    downloadCsv(`presents-${label ? label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' : ''}${day}.csv`, [
       ['Prénom', 'Nom', 'Statut', 'Parent', 'Heure d’arrivée', 'Enregistré par'],
       ...sorted.map((r) => [r.first, r.last, r.status, r.parent, hour(r.time), r.mode]),
     ]);
