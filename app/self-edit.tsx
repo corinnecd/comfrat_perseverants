@@ -1,9 +1,10 @@
 'use client';
 import {useState} from 'react';
+import VehicleField from './vehicle-field';
 import {Check, Pencil} from 'lucide-react';
 import {AGE_RANGES, BIRTH_MONTHS} from './person-details';
 
-type Fields = {first: string; last: string; email: string; phone: string; city: string; department: string; birthday_day: string; birthday_month: string; age_range: string};
+type Fields = {first: string; last: string; email: string; phone: string; city: string; department: string; birthday_day: string; birthday_month: string; age_range: string; vehicle: string};
 
 /** « Modifier mes informations » : la personne corrige elle-même sa fiche, sur son propre appareil. */
 export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (first: string) => void}) {
@@ -19,7 +20,7 @@ export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (fi
       const b = (await r.json()) as {person?: Record<string, string | number | null>; error?: string};
       if (!r.ok || !b.person) throw Error(b.error || 'Fiche introuvable.');
       const p = b.person;
-      setValues({first: String(p.first ?? ''), last: String(p.last ?? ''), email: String(p.email ?? ''), phone: String(p.phone ?? ''), city: String(p.city ?? ''), department: String(p.department ?? ''), birthday_day: p.birthday_day ? String(p.birthday_day) : '', birthday_month: p.birthday_month ? String(p.birthday_month) : '', age_range: p.age_range ? String(p.age_range) : ''});
+      setValues({first: String(p.first ?? ''), last: String(p.last ?? ''), email: String(p.email ?? ''), phone: String(p.phone ?? ''), city: String(p.city ?? ''), department: String(p.department ?? ''), birthday_day: p.birthday_day ? String(p.birthday_day) : '', birthday_month: p.birthday_month ? String(p.birthday_month) : '', age_range: p.age_range ? String(p.age_range) : '', vehicle: p.vehicle ? String(p.vehicle) : ''});
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -56,6 +57,7 @@ export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (fi
         <label>Anniversaire · mois<select value={values.birthday_month} onChange={set('birthday_month')} required={!!values.birthday_day}><option value="">—</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
       </div>
       <label>Tranche d’âge<select value={values.age_range} onChange={set('age_range')}><option value="">Non renseignée</option>{AGE_RANGES.map((a) => <option key={a} value={a}>{a}</option>)}</select></label>
+      <VehicleField value={values.vehicle} onChange={(v) => setValues((x) => (x ? {...x, vehicle: v} : x))}/>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">
         <button className="primary" disabled={busy}><Check size={16}/> {busy ? 'Enregistrement…' : 'Enregistrer'}</button>

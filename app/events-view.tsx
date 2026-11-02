@@ -6,7 +6,7 @@ import type {Person} from './data';
 import PresenceExport from './presence-export';
 
 type EventItem = {id: string; name: string; day: string; opens_at: string; closes_at: string; token: string; present: number; status: 'upcoming' | 'open' | 'closed'};
-type Attendee = {person: string; time: string; mode: string; first: string; last: string; status: string; parent: string | null};
+type Attendee = {person: string; time: string; mode: string; first: string; last: string; status: string; parent: string | null; vehicle: string | null};
 
 const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris'});
 const hourLabel = (iso: string) => hhmm(iso).replace(':', ' h ');
@@ -134,7 +134,7 @@ export default function EventsView({people}: {people: Person[]}) {
 
               {openId === ev.id && (
                 <div className="event-detail">
-                  <PresenceExport day={ev.day} label={ev.name} rows={attendees.map((a) => ({first: a.first, last: a.last, status: a.status, parent: a.parent || '', time: a.time, mode: a.mode}))}/>
+                  <PresenceExport day={ev.day} label={ev.name} rows={attendees.map((a) => ({first: a.first, last: a.last, status: a.status, parent: a.parent || '', time: a.time, mode: a.mode, vehicle: a.vehicle}))}/>
                   <label className="search event-search"><Search size={16}/><input placeholder="Ajouter une présence : nom ou prénom…" value={query} onChange={(e) => setQuery(e.target.value)}/></label>
                   {matches.length > 0 && (
                     <ul className="accueil-results">

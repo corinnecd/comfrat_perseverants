@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     if (id) {
       const ev = await d.prepare('SELECT * FROM events WHERE id=?').bind(id).first<EventRow>();
       if (!ev) return json({error: 'Événement introuvable.'}, 404);
-      const rows = await d.prepare(`SELECT ea.person,ea.time,ea.mode,p.first,p.last,p.status,
+      const rows = await d.prepare(`SELECT ea.person,ea.time,ea.mode,p.first,p.last,p.status,(SELECT pd.vehicle FROM person_details pd WHERE pd.person=p.id) AS vehicle,
           (SELECT par.first||' '||par.last FROM person_parents pp JOIN people par ON par.id=pp.parent WHERE pp.child=p.id) AS parent
         FROM event_attendance ea JOIN people p ON p.id=ea.person WHERE ea.event=? ORDER BY p.last,p.first`).bind(id).all();
       return json({event: {...ev, status: eventStatus(ev)}, attendees: rows.results});

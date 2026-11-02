@@ -1,5 +1,6 @@
 'use client';
 import {useState} from 'react';
+import VehicleField from './vehicle-field';
 import {Check} from 'lucide-react';
 import type {Person} from './data';
 import {ALL_STATUSES, CHILD_STATUS} from './data';
@@ -13,6 +14,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
     birthday_day: person.birthday_day ? String(person.birthday_day) : '',
     birthday_month: person.birthday_month ? String(person.birthday_month) : '',
     age_range: person.age_range || '',
+    vehicle: person.vehicle || '',
   });
   const isChild = values.status === CHILD_STATUS;
   const [busy, setBusy] = useState(false);
@@ -34,6 +36,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
         birthday_day: values.birthday_day ? Number(values.birthday_day) : null,
         birthday_month: values.birthday_month ? Number(values.birthday_month) : null,
         age_range: values.age_range || null,
+        vehicle: values.vehicle || null,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -69,6 +72,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
       <label>Tranche d’âge
         <select value={values.age_range} onChange={set('age_range')}><option value="">Non renseignée</option>{(isChild ? CHILD_AGE_RANGES : AGE_RANGES).map((a) => <option key={a} value={a}>{a}</option>)}</select>
       </label>
+      {!isChild && <VehicleField value={values.vehicle} onChange={(v) => setValues((x) => ({...x, vehicle: v}))}/>}
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">
         <button className="primary" disabled={busy}><Check size={17}/> {busy ? 'Enregistrement…' : 'Enregistrer les modifications'}</button>

@@ -4,8 +4,11 @@ import {Copy, Send, Share2, Printer, MessageSquare, FileSpreadsheet, FileDown} f
 import {downloadTablePdf, pdfFileName} from './pdf-export';
 import {dateLabel} from './dates';
 import {downloadCsv, escapeHtml, openPrintWindow} from './print-window';
+import {vehicleLabel} from './person-details';
 
-export type PresenceRow = {first: string; last: string; status: string; parent: string; time: string; mode: string};
+const veh = (r: PresenceRow) => r.status === 'Enfant' ? '' : vehicleLabel(r.vehicle) || 'Non renseigné';
+
+export type PresenceRow = {first: string; last: string; status: string; parent: string; time: string; mode: string; vehicle?: string | null};
 
 /** Heure d'arrivée à Paris (« 10 h 32 »). */
 const hour = (iso: string) => {
@@ -26,7 +29,7 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
   const totalText = `${sorted.length} présent${sorted.length > 1 ? 's' : ''}${kids ? ` dont ${kids} enfant${kids > 1 ? 's' : ''}` : ''}`;
 
   const text = `COM’FRAT — Les Persévérants\nPrésents à ${what} du ${dayText}\n${totalText}\n\n` +
-    sorted.map((r, i) => `${i + 1}. ${r.first} ${r.last} — ${r.status}${r.parent ? ` (Parent : ${r.parent})` : ''}`).join('\n');
+    sorted.map((r, i) => `${i + 1}. ${r.first} ${r.last} — ${r.status}${r.parent ? ` (Parent : ${r.parent})` : ''}${veh(r) ? ` · Véhiculé(e) : ${veh(r)}` : ''}`).join('\n');
 
   const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 4000); };
   async function copy() {
@@ -37,8 +40,8 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
     try { await navigator.share({title: 'Présents — COM’FRAT', text}); } catch { /* partage annulé */ }
   }
   function print() {
-    const body = `<table><thead><tr><th>#</th><th>Nom</th><th>Statut</th><th>Arrivée</th></tr></thead><tbody>` +
-      sorted.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${hour(r.time)}</td></tr>`).join('') +
+    const body = `<table><thead><tr><th>#</th><th>Nom</th><th>Statut</th><th>Véhiculé(e)</th><th>Arrivée</th></tr></thead><tbody>` +
+      sorted.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${veh(r)}</td><td>${hour(r.time)}</td></tr>`).join('') +
       `</tbody></table><p class="total">${totalText}</p>`;
     if (!openPrintWindow(label ? `Présents — ${label}` : 'Présents à la rencontre', dayText, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
@@ -46,8 +49,8 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
     try {
       await downloadTablePdf({
         title: label ? `Présents — ${label}` : 'Présents à la rencontre', subtitle: dayText, summary: totalText,
-        head: ['#', 'Nom', 'Statut', 'Parent', 'Arrivée'],
-        body: sorted.map((r, i) => [i + 1, `${r.first} ${r.last}`, r.status, r.parent, hour(r.time)]),
+        head: ['#', 'Nom', 'Statut', 'Parent', 'Véhiculé(e)', 'Arrivée'],
+        body: sorted.map((r, i) => [i + 1, `${r.first} ${r.last}`, r.status, r.parent, veh(r), hour(r.time)]),
         filename: pdfFileName(`presents-${label || 'comfrat'}-${day}`),
         columnStyles: {0: {cellWidth: 10, halign: 'right'}, 1: {fontStyle: 'bold'}},
       });
@@ -55,8 +58,8 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
   }
   function excel() {
     downloadCsv(`presents-${label ? label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' : ''}${day}.csv`, [
-      ['Prénom', 'Nom', 'Statut', 'Parent', 'Heure d’arrivée', 'Enregistré par'],
-      ...sorted.map((r) => [r.first, r.last, r.status, r.parent, hour(r.time), r.mode]),
+      ['Prénom', 'Nom', 'Statut', 'Parent', 'Véhiculé(e)', 'Heure d’arrivée', 'Enregistré par'],
+      ...sorted.map((r) => [r.first, r.last, r.status, r.parent, veh(r), hour(r.time), r.mode]),
     ]);
   }
 

@@ -4,7 +4,7 @@ Application mobile-first de gestion des présences et d’accueil de la Com’Fr
 
 ## Fonctionnalités
 
-- Inscription des membres, nouveaux, NA, NC, invités et enfants.
+- Inscription des membres, nouveaux, NA, NC, invités et enfants, avec « Véhiculé(e) » (oui / non), modifiable par la personne et par les responsables.
 - Présence par QR du dimanche (ouvert du samedi 18 h au lundi 22 h), QR personnel ou saisie par l’équipe.
 - Espace responsables : fiches, historique, statistiques, récap, personnes à recontacter, anniversaires, effectif adulte et taux de présence.
 - Espace accueil (bénévoles) : présences, ajout d’enfants, demandes de correction, sans accès aux données personnelles.

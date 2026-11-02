@@ -4,6 +4,8 @@ import {ArrowLeft, ArrowRight, CalendarDays, Check, Clock, ShieldCheck, UserPlus
 import {dateLabel} from '../dates';
 import {PERSON_STATUSES} from '../data';
 import BirthdayFields from '../birthday-fields';
+import VehicleField from '../vehicle-field';
+import VehicleQuickAsk from '../vehicle-quick-ask';
 import Scanner from '../scanner';
 
 type PublicEvent = {name: string; day: string; opensAt: string; closesAt: string; status: 'upcoming' | 'open' | 'closed'};
@@ -121,6 +123,7 @@ export default function EventCheckin() {
             <label>Je suis<select className="event-status-select" value={status} onChange={(e) => setStatus(e.target.value)}>{PERSON_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
             <BirthdayFields/>
             {status === 'Invité' && <label>Qui vous a invité·e ?<input name="inviter" required maxLength={200} placeholder="Prénom et nom, ou « Venue spontanée »"/></label>}
+            <VehicleField required/>
             <p className="privacy-note"><ShieldCheck size={18}/> Ces informations servent à vous proposer des activités qui vous correspondent le mieux. Vous pouvez demander leur correction ou suppression à votre responsable.</p>
             <button className="primary" disabled={busy}>{busy ? 'Enregistrement…' : 'M’inscrire et confirmer ma présence'}<ArrowRight size={17}/></button>
             <button type="button" className="text-link" onClick={() => setStep('link')}>Retour</button>
@@ -131,6 +134,7 @@ export default function EventCheckin() {
           <span className="success-check"><Check size={32}/></span>
           <h1>Merci {first} !</h1>
           <p>{already ? 'Votre présence était déjà enregistrée' : 'Votre présence est enregistrée'} pour « {event?.name} » du {when}.</p>
+          <VehicleQuickAsk/>
           <a className="primary" href="/accueil">Retour à l’accueil <ArrowRight size={17}/></a>
         </>}
 
