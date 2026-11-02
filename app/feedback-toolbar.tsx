@@ -1,6 +1,8 @@
 'use client';
 import {useMemo, useState} from 'react';
-import {Copy, Send, Share2, Printer, MessageSquare} from 'lucide-react';
+import {Copy, Send, Share2, Printer, MessageSquare, FileDown, FileSpreadsheet} from 'lucide-react';
+import {downloadPrayersPdf, pdfFileName} from './pdf-export';
+import {downloadCsv} from './print-window';
 import {dateLabel} from './dates';
 import {escapeHtml, openPrintWindow} from './print-window';
 
@@ -108,6 +110,33 @@ export default function FeedbackToolbar({feedback}: {feedback: FeedbackItem[]}) 
   }
 
 
+  const wantPrayer = (f: FeedbackItem) => (kind === 'both' || kind === 'prayers') && f.prayer_requested === 1 && !!f.prayer_text;
+  const wantTestimony = (f: FeedbackItem) => (kind === 'both' || kind === 'testimonies') && f.testimony_requested === 1 && !!f.testimony_text;
+  function summaryText() {
+    const prayers = filtered.filter(wantPrayer).length, testimonies = filtered.filter(wantTestimony).length;
+    const parts: string[] = [];
+    if (kind !== 'testimonies') parts.push(`${prayers} sujet${prayers > 1 ? 's' : ''} de prière`);
+    if (kind !== 'prayers') parts.push(`${testimonies} témoignage${testimonies > 1 ? 's' : ''}`);
+    return parts.join(' · ');
+  }
+  async function exportPdf() {
+    try {
+      await downloadPrayersPdf({
+        subtitle: periodLabel, summary: summaryText(),
+        items: filtered.map((f) => ({first: f.first, last: f.last, status: f.status,
+          date: dateLabel(f.day, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}).replace(/^./, (c) => c.toUpperCase()),
+          prayer: wantPrayer(f) ? f.prayer_text : undefined, testimony: wantTestimony(f) ? f.testimony_text : undefined})),
+        filename: pdfFileName(`prieres-temoignages-${period === 'day' && day ? day : period}`),
+      });
+    } catch { setNotice('Export PDF impossible. Réessayez.'); }
+  }
+  function exportExcel() {
+    downloadCsv(`prieres-temoignages-${period === 'day' && day ? day : period}.csv`, [
+      ['Date', 'Prénom', 'Nom', 'Statut', 'Sujet de prière', 'Témoignage'],
+      ...filtered.map((f) => [f.day, f.first, f.last, f.status, wantPrayer(f) ? f.prayer_text : '', wantTestimony(f) ? f.testimony_text : '']),
+    ]);
+  }
+
   const mailto = `mailto:?subject=${encodeURIComponent('Prières et témoignages — COM’FRAT')}&body=${encodeURIComponent(text)}`;
   const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
 
@@ -144,7 +173,9 @@ export default function FeedbackToolbar({feedback}: {feedback: FeedbackItem[]}) 
         <a className={'secondary' + (filtered.length === 0 ? ' disabled' : '')} href={filtered.length === 0 ? undefined : mailto}><Send size={15}/> E-mail</a>
         <a className={'secondary' + (filtered.length === 0 ? ' disabled' : '')} href={filtered.length === 0 ? undefined : wa} target="_blank" rel="noopener noreferrer"><MessageSquare size={15}/> WhatsApp</a>
         {typeof navigator !== 'undefined' && 'share' in navigator && <button className="secondary" onClick={() => void share()} disabled={filtered.length === 0}><Share2 size={15}/> Partager</button>}
-        <button className="secondary" onClick={printPdf} disabled={filtered.length === 0}><Printer size={15}/> Imprimer / PDF</button>
+        <button className="secondary export-strong" onClick={() => void exportPdf()} disabled={filtered.length === 0}><FileDown size={15}/> Exporter PDF</button>
+        <button className="secondary export-strong" onClick={exportExcel} disabled={filtered.length === 0}><FileSpreadsheet size={15}/> Exporter Excel</button>
+        <button className="secondary" onClick={printPdf} disabled={filtered.length === 0}><Printer size={15}/> Imprimer</button>
       </div>
       {notice && <p className="feedback-export-notice" role="status">{notice}</p>}
     </div>

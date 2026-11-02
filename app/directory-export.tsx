@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
-import {Copy, Send, Share2, Printer, MessageSquare, FileSpreadsheet} from 'lucide-react';
+import {Copy, Send, Share2, Printer, MessageSquare, FileSpreadsheet, FileDown} from 'lucide-react';
+import {downloadTablePdf, pdfFileName} from './pdf-export';
 import {dateLabel} from './dates';
 import {BIRTH_MONTHS} from './person-details';
 import {downloadCsv, escapeHtml, openPrintWindow} from './print-window';
@@ -41,6 +42,17 @@ export default function DirectoryExport({title, filterLabel, rows}: {title: stri
       `</tbody></table><p class="total">${count}</p>`;
     if (!openPrintWindow(title, subtitle, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
+  async function pdf() {
+    try {
+      await downloadTablePdf({
+        title, subtitle, summary: count, landscape: true,
+        head: ['#', 'Nom', 'Statut', 'Téléphone', 'E-mail', 'Ville', 'Anniversaire', 'Dernière présence'],
+        body: sorted.map((r, i) => [i + 1, `${r.first} ${r.last}${r.parent ? `\nParent : ${r.parent}` : ''}`, r.status, r.phone, r.email, [r.city, r.department].filter(Boolean).join(' · '), birthday(r), last(r)]),
+        filename: pdfFileName(`${title}-${today}`),
+        columnStyles: {0: {cellWidth: 10, halign: 'right'}, 1: {fontStyle: 'bold'}},
+      });
+    } catch { flash('Export PDF impossible. Réessayez.'); }
+  }
   function excel() {
     const slug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     downloadCsv(`${slug}-${today}.csv`, [
@@ -64,8 +76,9 @@ export default function DirectoryExport({title, filterLabel, rows}: {title: stri
         <a className={'secondary' + (empty ? ' disabled' : '')} href={empty ? undefined : mailto}><Send size={15}/> E-mail</a>
         <a className={'secondary' + (empty ? ' disabled' : '')} href={empty ? undefined : wa} target="_blank" rel="noopener noreferrer"><MessageSquare size={15}/> WhatsApp</a>
         {typeof navigator !== 'undefined' && 'share' in navigator && <button className="secondary" onClick={() => void share()} disabled={empty}><Share2 size={15}/> Partager</button>}
-        <button className="secondary" onClick={print} disabled={empty}><Printer size={15}/> Imprimer / PDF</button>
-        <button className="secondary" onClick={excel} disabled={empty}><FileSpreadsheet size={15}/> Excel</button>
+        <button className="secondary export-strong" onClick={() => void pdf()} disabled={empty}><FileDown size={15}/> Exporter PDF</button>
+        <button className="secondary export-strong" onClick={excel} disabled={empty}><FileSpreadsheet size={15}/> Exporter Excel</button>
+        <button className="secondary" onClick={print} disabled={empty}><Printer size={15}/> Imprimer</button>
       </div>
       {notice && <p className="feedback-export-notice" role="status">{notice}</p>}
     </div>

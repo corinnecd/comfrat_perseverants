@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
-import {Copy, Send, Share2, Printer, MessageSquare, FileSpreadsheet} from 'lucide-react';
+import {Copy, Send, Share2, Printer, MessageSquare, FileSpreadsheet, FileDown} from 'lucide-react';
+import {downloadTablePdf, pdfFileName} from './pdf-export';
 import {dateLabel} from './dates';
 import {downloadCsv, escapeHtml, openPrintWindow} from './print-window';
 
@@ -41,6 +42,17 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
       `</tbody></table><p class="total">${totalText}</p>`;
     if (!openPrintWindow(label ? `Présents — ${label}` : 'Présents à la rencontre', dayText, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
+  async function pdf() {
+    try {
+      await downloadTablePdf({
+        title: label ? `Présents — ${label}` : 'Présents à la rencontre', subtitle: dayText, summary: totalText,
+        head: ['#', 'Nom', 'Statut', 'Parent', 'Arrivée'],
+        body: sorted.map((r, i) => [i + 1, `${r.first} ${r.last}`, r.status, r.parent, hour(r.time)]),
+        filename: pdfFileName(`presents-${label || 'comfrat'}-${day}`),
+        columnStyles: {0: {cellWidth: 10, halign: 'right'}, 1: {fontStyle: 'bold'}},
+      });
+    } catch { flash('Export PDF impossible. Réessayez.'); }
+  }
   function excel() {
     downloadCsv(`presents-${label ? label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' : ''}${day}.csv`, [
       ['Prénom', 'Nom', 'Statut', 'Parent', 'Heure d’arrivée', 'Enregistré par'],
@@ -63,8 +75,9 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
         <a className={'secondary' + (empty ? ' disabled' : '')} href={empty ? undefined : mailto}><Send size={15}/> E-mail</a>
         <a className={'secondary' + (empty ? ' disabled' : '')} href={empty ? undefined : wa} target="_blank" rel="noopener noreferrer"><MessageSquare size={15}/> WhatsApp</a>
         {typeof navigator !== 'undefined' && 'share' in navigator && <button className="secondary" onClick={() => void share()} disabled={empty}><Share2 size={15}/> Partager</button>}
-        <button className="secondary" onClick={print} disabled={empty}><Printer size={15}/> Imprimer / PDF</button>
-        <button className="secondary" onClick={excel} disabled={empty}><FileSpreadsheet size={15}/> Excel</button>
+        <button className="secondary export-strong" onClick={() => void pdf()} disabled={empty}><FileDown size={15}/> Exporter PDF</button>
+        <button className="secondary export-strong" onClick={excel} disabled={empty}><FileSpreadsheet size={15}/> Exporter Excel</button>
+        <button className="secondary" onClick={print} disabled={empty}><Printer size={15}/> Imprimer</button>
       </div>
       {notice && <p className="feedback-export-notice" role="status">{notice}</p>}
     </div>
