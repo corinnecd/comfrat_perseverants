@@ -123,7 +123,7 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
             {presentList.length ? (
               <ul className="accueil-present-list">
                 {(showAll ? presentList : presentList.slice(0, 10)).map((p) => (
-                  <li key={p.id}><span className="avatar">{p.first[0]}{p.last[0]}</span><strong>{p.first} {p.last}</strong>{p.status === CHILD_STATUS && <span className="status-type child"><Baby size={12}/>Enfant</span>}{isBirthday(p) && <span className="birthday-badge"><Cake size={13}/> Anniversaire</span>}</li>
+                  <li key={p.id} className={p.status === CHILD_STATUS ? 'child-row' : undefined}><span className="avatar">{p.first[0]}{p.last[0]}</span><strong>{p.first} {p.last}</strong>{p.status === CHILD_STATUS && <span className="status-type child"><Baby size={12}/>Enfant</span>}{isBirthday(p) && <span className="birthday-badge"><Cake size={13}/> Anniversaire</span>}</li>
                 ))}
               </ul>
             ) : null}

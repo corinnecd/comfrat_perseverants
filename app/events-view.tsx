@@ -151,7 +151,7 @@ export default function EventsView({people}: {people: Person[]}) {
                   {attendees.length === 0 ? <p className="accueil-hint">Personne pour l’instant.</p> : (
                     <ul className="event-attendees">
                       {attendees.map((a) => (
-                        <li key={a.person}>
+                        <li key={a.person} className={a.status === 'Enfant' ? 'child-row' : undefined}>
                           <span className="avatar">{a.first[0]}{a.last[0]}</span>
                           <span><strong>{a.first} {a.last}</strong>{a.parent && <span className="parent-label"> (Parent : {a.parent})</span>}<small>{a.status} · {hourLabel(a.time)} · {a.mode}</small></span>
                           <button className="arrow-button" title="Retirer cette présence" disabled={busy} onClick={() => { if (window.confirm(`Retirer la présence de ${a.first} ${a.last} ?`)) void post({action: 'unattend', id: ev.id, person: a.person}, 'Présence retirée.'); }}><X size={16}/></button>

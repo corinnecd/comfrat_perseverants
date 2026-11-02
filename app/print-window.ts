@@ -22,6 +22,7 @@ export function openPrintWindow(title: string, subtitle: string, bodyHtml: strin
     th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#7a6a4f;border-bottom:2px solid #e3d9c7;padding:8px 6px}
     td{border-bottom:1px solid #eee7dd;padding:8px 6px;vertical-align:top}td small{color:#7a6a4f}
     .total{margin-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#5b6b7b}
+    tr.child td{background:#fff0cd;color:#6e4a06}tr.child td:first-child{box-shadow:inset 4px 0 0 #e3a529}
     @media print{body{margin:10mm}}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .doc-head{display:flex;align-items:center;gap:18px;margin-bottom:6px}.doc-head img{width:86px;height:auto}

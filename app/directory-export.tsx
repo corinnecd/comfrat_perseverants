@@ -39,7 +39,7 @@ export default function DirectoryExport({title, filterLabel, rows}: {title: stri
   }
   function print() {
     const body = `<table><thead><tr><th>#</th><th>Nom</th><th>Statut</th><th>Contact</th><th>Véhiculé(e)</th><th>Anniversaire</th><th>Dernière présence</th></tr></thead><tbody>` +
-      sorted.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}${r.city ? `<br><small>${escapeHtml(r.city)}${r.department ? ' · ' + escapeHtml(r.department) : ''}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${escapeHtml(r.phone)}${r.email ? `<br><small>${escapeHtml(r.email)}</small>` : ''}</td><td>${veh(r)}</td><td>${birthday(r)}</td><td>${last(r)}</td></tr>`).join('') +
+      sorted.map((r, i) => `<tr${r.status === 'Enfant' ? ' class="child"' : ''}><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}${r.city ? `<br><small>${escapeHtml(r.city)}${r.department ? ' · ' + escapeHtml(r.department) : ''}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${escapeHtml(r.phone)}${r.email ? `<br><small>${escapeHtml(r.email)}</small>` : ''}</td><td>${veh(r)}</td><td>${birthday(r)}</td><td>${last(r)}</td></tr>`).join('') +
       `</tbody></table><p class="total">${count}</p>`;
     if (!openPrintWindow(title, subtitle, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
@@ -50,6 +50,7 @@ export default function DirectoryExport({title, filterLabel, rows}: {title: stri
         head: ['#', 'Nom', 'Statut', 'Téléphone', 'E-mail', 'Ville', 'Véhiculé(e)', 'Anniversaire', 'Dernière présence'],
         body: sorted.map((r, i) => [i + 1, `${r.first} ${r.last}${r.parent ? `\nParent : ${r.parent}` : ''}`, r.status, r.phone, r.email, [r.city, r.department].filter(Boolean).join(' · '), veh(r), birthday(r), last(r)]),
         filename: pdfFileName(`${title}-${today}`),
+        highlightRows: sorted.flatMap((r, i) => (r.status === 'Enfant' ? [i] : [])), highlightLegend: 'Enfants',
         columnStyles: {0: {cellWidth: 10, halign: 'right'}, 1: {fontStyle: 'bold'}},
       });
     } catch { flash('Export PDF impossible. Réessayez.'); }

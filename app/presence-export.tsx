@@ -41,7 +41,7 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
   }
   function print() {
     const body = `<table><thead><tr><th>#</th><th>Nom</th><th>Statut</th><th>Véhiculé(e)</th><th>Arrivée</th></tr></thead><tbody>` +
-      sorted.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${veh(r)}</td><td>${hour(r.time)}</td></tr>`).join('') +
+      sorted.map((r, i) => `<tr${r.status === 'Enfant' ? ' class="child"' : ''}><td>${i + 1}</td><td><strong>${escapeHtml(r.first + ' ' + r.last)}</strong>${r.parent ? `<br><small>Parent : ${escapeHtml(r.parent)}</small>` : ''}</td><td>${escapeHtml(r.status)}</td><td>${veh(r)}</td><td>${hour(r.time)}</td></tr>`).join('') +
       `</tbody></table><p class="total">${totalText}</p>`;
     if (!openPrintWindow(label ? `Présents — ${label}` : 'Présents à la rencontre', dayText, body)) flash('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
@@ -52,6 +52,7 @@ export default function PresenceExport({day, rows, label}: {day: string; rows: P
         head: ['#', 'Nom', 'Statut', 'Parent', 'Véhiculé(e)', 'Arrivée'],
         body: sorted.map((r, i) => [i + 1, `${r.first} ${r.last}`, r.status, r.parent, veh(r), hour(r.time)]),
         filename: pdfFileName(`presents-${label || 'comfrat'}-${day}`),
+        highlightRows: sorted.flatMap((r, i) => (r.status === 'Enfant' ? [i] : [])), highlightLegend: 'Enfants',
         columnStyles: {0: {cellWidth: 10, halign: 'right'}, 1: {fontStyle: 'bold'}},
       });
     } catch { flash('Export PDF impossible. Réessayez.'); }

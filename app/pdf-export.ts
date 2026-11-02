@@ -8,6 +8,9 @@ const NAVY: RGB = [0, 27, 53];
 const GOLD: RGB = [154, 101, 16];
 const GREY: RGB = [91, 107, 123];
 const LINE: RGB = [227, 217, 199];
+/** Lignes des enfants : fond doré clair + liseré, comme le badge « Enfant » du site. */
+const CHILD_FILL: RGB = [255, 240, 205];
+const CHILD_BAR: RGB = [227, 165, 41];
 
 let logoCache: string | null | undefined;
 /** Logo réduit et compressé (JPEG sur fond blanc) : quelques dizaines de Ko au lieu de 400. */
@@ -60,15 +63,25 @@ function footer(doc: import('jspdf').jsPDF) {
 /** Liste sous forme de tableau (présents, répertoire, à recontacter, récap…). */
 export async function downloadTablePdf(opts: {
   title: string; subtitle: string; summary?: string; head: string[]; body: (string | number)[][];
-  filename: string; landscape?: boolean; columnStyles?: Record<number, {cellWidth?: number | 'auto' | 'wrap'; halign?: 'left' | 'right' | 'center'; fontStyle?: 'bold' | 'normal'}>;
+  filename: string; landscape?: boolean;
+  /** Indices des lignes à surligner (enfants) et légende associée. */
+  highlightRows?: number[]; highlightLegend?: string;
+  columnStyles?: Record<number, {cellWidth?: number | 'auto' | 'wrap'; halign?: 'left' | 'right' | 'center'; fontStyle?: 'bold' | 'normal'}>;
 }) {
   const {doc, top} = await newDoc(opts.title, opts.subtitle, opts.landscape);
   const autoTable = (await import('jspdf-autotable')).default;
   let y = top;
   if (opts.summary) {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...GREY);
-    doc.text(clean(opts.summary), 14, y); y += 5;
+    doc.text(clean(opts.summary), 14, y);
+    if (opts.highlightRows?.length && opts.highlightLegend) {
+      const x = 14 + doc.getTextWidth(clean(opts.summary)) + 8;
+      doc.setFillColor(...CHILD_FILL); doc.setDrawColor(...CHILD_BAR); doc.rect(x, y - 3.2, 4, 4, 'FD');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text(clean(opts.highlightLegend), x + 6, y);
+    }
+    y += 5;
   }
+  const highlight = new Set(opts.highlightRows || []);
   autoTable(doc, {
     startY: y,
     head: [opts.head.map(clean)],
@@ -78,6 +91,18 @@ export async function downloadTablePdf(opts: {
     headStyles: {fillColor: [246, 236, 221], textColor: [122, 106, 79], fontStyle: 'bold', fontSize: 8},
     alternateRowStyles: {fillColor: [253, 250, 244]},
     columnStyles: opts.columnStyles,
+    didParseCell: (data) => {
+      if (data.section === 'body' && highlight.has(data.row.index)) {
+        data.cell.styles.fillColor = CHILD_FILL;
+        data.cell.styles.textColor = [110, 74, 6];
+      }
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index === 0 && highlight.has(data.row.index)) {
+        data.doc.setFillColor(...CHILD_BAR);
+        data.doc.rect(data.cell.x, data.cell.y, 1.2, data.cell.height, 'F');
+      }
+    },
   });
   footer(doc);
   doc.save(opts.filename);
