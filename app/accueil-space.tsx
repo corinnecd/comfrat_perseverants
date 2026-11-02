@@ -26,6 +26,7 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
   const [fixText, setFixText] = useState('');
   const [child, setChild] = useState(emptyChild);
   const [busy, setBusy] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -121,11 +122,13 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
             <div className="card-heading"><div><h2>Personnes présentes</h2><p>{presentList.length} présente{presentList.length > 1 ? 's' : ''}{kids ? ` · dont ${kids} enfant${kids > 1 ? 's' : ''}` : ''}</p></div><span className="count-pill">{presentList.length}</span></div>
             {presentList.length ? (
               <ul className="accueil-present-list">
-                {presentList.map((p) => (
+                {(showAll ? presentList : presentList.slice(0, 10)).map((p) => (
                   <li key={p.id}><span className="avatar">{p.first[0]}{p.last[0]}</span><strong>{p.first} {p.last}</strong>{p.status === CHILD_STATUS && <span className="status-type child"><Baby size={12}/>Enfant</span>}{isBirthday(p) && <span className="birthday-badge"><Cake size={13}/> Anniversaire</span>}</li>
                 ))}
               </ul>
-            ) : <div className="empty"><Users size={28}/><h3>Personne pour l’instant</h3><p>Les présences apparaîtront ici au fil des arrivées.</p></div>}
+            ) : null}
+            {presentList.length > 10 && <div className="list-more"><button className="secondary" onClick={() => setShowAll((v) => !v)}>{showAll ? 'Voir moins' : `Voir plus · ${presentList.length - 10} autre${presentList.length - 10 > 1 ? 's' : ''}`}</button></div>}
+            {presentList.length ? null : <div className="empty"><Users size={28}/><h3>Personne pour l’instant</h3><p>Les présences apparaîtront ici au fil des arrivées.</p></div>}
             {showQr && <div className="accueil-qr"><SundayQrCard/></div>}
           </section>
     </div>
