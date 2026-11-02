@@ -76,15 +76,37 @@ export default function FeedbackToolbar({feedback}: {feedback: FeedbackItem[]}) 
     try { await navigator.share({title: 'Prières et témoignages — COM’FRAT', text}); } catch { /* partage annulé */ }
   }
   function printPdf() {
-    let html = '';
+    const prayers = filtered.filter((f) => (kind === 'both' || kind === 'prayers') && f.prayer_requested === 1 && f.prayer_text).length;
+    const testimonies = filtered.filter((f) => (kind === 'both' || kind === 'testimonies') && f.testimony_requested === 1 && f.testimony_text).length;
+    const parts: string[] = [];
+    if (kind !== 'testimonies') parts.push(`${prayers} sujet${prayers > 1 ? 's' : ''} de prière`);
+    if (kind !== 'prayers') parts.push(`${testimonies} témoignage${testimonies > 1 ? 's' : ''}`);
+    let html = `<p class="pt-summary">${parts.join(' · ')}</p>`;
     for (const f of filtered) {
-      html += `<article><header><strong>${escapeHtml(f.first + ' ' + f.last)}</strong><span>${dateLabel(f.day, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}</span></header>`;
-      if ((kind === 'both' || kind === 'prayers') && f.prayer_requested === 1 && f.prayer_text) html += `<section><h3>Sujet de prière</h3><p>${escapeHtml(f.prayer_text)}</p></section>`;
-      if ((kind === 'both' || kind === 'testimonies') && f.testimony_requested === 1 && f.testimony_text) html += `<section><h3>Témoignage</h3><p>${escapeHtml(f.testimony_text)}</p></section>`;
+      const date = dateLabel(f.day, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+      html += `<article class="pt-card"><header class="pt-head"><div><span class="pt-last">${escapeHtml(f.last.toUpperCase())}</span> <span class="pt-first">${escapeHtml(f.first)}</span>${f.status ? `<span class="pt-status">${escapeHtml(f.status)}</span>` : ''}</div><span class="pt-date">${date.replace(/^./, (c) => c.toUpperCase())}</span></header>`;
+      if ((kind === 'both' || kind === 'prayers') && f.prayer_requested === 1 && f.prayer_text) html += `<section class="pt-box pt-prayer"><h3>🙏 Sujet de prière</h3><p>${escapeHtml(f.prayer_text)}</p></section>`;
+      if ((kind === 'both' || kind === 'testimonies') && f.testimony_requested === 1 && f.testimony_text) html += `<section class="pt-box pt-testimony"><h3>✨ Témoignage</h3><p>${escapeHtml(f.testimony_text)}</p></section>`;
       html += '</article>';
     }
-    if (!openPrintWindow('Prières et témoignages', periodLabel, html || '<p>Aucun partage pour ce choix.</p>')) setNotice('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
+    if (!filtered.length) html = '<p>Aucun partage pour ce choix.</p>';
+    const css = `
+      .pt-summary{font-family:Arial,sans-serif;font-size:13px;color:#5b6b7b;margin:0 0 18px}
+      .pt-card{border:1px solid #e3d9c7;border-radius:12px;padding:16px 18px;margin:0 0 14px;background:#fffdf8;break-inside:avoid;page-break-inside:avoid}
+      .pt-card+.pt-card{border-top:1px solid #e3d9c7}
+      .pt-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid #eee3d0;font-family:Arial,sans-serif}
+      .pt-last{font-size:17px;font-weight:800;color:#001b35;letter-spacing:.3px}
+      .pt-first{font-size:17px;font-weight:700;color:#001b35}
+      .pt-status{display:inline-block;margin-left:10px;font-size:11px;font-weight:600;color:#7a6a4f;background:#f6ecdd;border-radius:999px;padding:2px 9px;vertical-align:middle}
+      .pt-date{font-size:13px;font-weight:700;color:#9a6510;white-space:nowrap}
+      .pt-box{border-radius:8px;padding:10px 14px;margin:10px 0 0;border-left:5px solid}
+      .pt-box h3{margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+      .pt-box p{margin:0;font-size:15px;font-weight:700;line-height:1.5;color:#1b2d3f;white-space:pre-wrap}
+      .pt-prayer{background:#fdf1dc;border-color:#d98f0f}.pt-prayer h3{color:#9a5a00}
+      .pt-testimony{background:#e9f5ee;border-color:#3f9a68}.pt-testimony h3{color:#2d7450}`;
+    if (!openPrintWindow('Prières et témoignages', periodLabel, html, css, true)) setNotice('Autorisez l’ouverture d’une nouvelle fenêtre pour imprimer.');
   }
+
 
   const mailto = `mailto:?subject=${encodeURIComponent('Prières et témoignages — COM’FRAT')}&body=${encodeURIComponent(text)}`;
   const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;

@@ -8,7 +8,7 @@ export function escapeHtml(s: string) {
  * (dans la fenêtre d'impression : « Enregistrer au format PDF »).
  * Retourne false si le navigateur a bloqué la nouvelle fenêtre.
  */
-export function openPrintWindow(title: string, subtitle: string, bodyHtml: string) {
+export function openPrintWindow(title: string, subtitle: string, bodyHtml: string, extraCss = '', withLogo = false) {
   const w = window.open('', '_blank');
   if (!w) return false;
   w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)} — COM’FRAT</title><style>
@@ -23,10 +23,19 @@ export function openPrintWindow(title: string, subtitle: string, bodyHtml: strin
     td{border-bottom:1px solid #eee7dd;padding:8px 6px;vertical-align:top}td small{color:#7a6a4f}
     .total{margin-top:16px;font-family:Arial,sans-serif;font-size:13px;color:#5b6b7b}
     @media print{body{margin:10mm}}
-  </style></head><body><h1>${escapeHtml(title)}</h1><h2>COM’FRAT — Les Persévérants · ${escapeHtml(subtitle)}</h2>${bodyHtml}</body></html>`);
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .doc-head{display:flex;align-items:center;gap:18px;margin-bottom:6px}.doc-head img{width:86px;height:auto}
+    ${extraCss}
+  </style></head><body>${withLogo ? `<div class="doc-head"><img src="${location.origin}/logo-perseverants.png" alt=""><div><h1>${escapeHtml(title)}</h1><h2 style="margin:0">COM’FRAT — Les Persévérants · ${escapeHtml(subtitle)}</h2></div></div><div style="height:22px"></div>` : `<h1>${escapeHtml(title)}</h1><h2>COM’FRAT — Les Persévérants · ${escapeHtml(subtitle)}</h2>`}${bodyHtml}</body></html>`);
   w.document.close();
   w.focus();
-  setTimeout(() => w.print(), 300);
+  // Attendre le chargement des images (logo) avant d'ouvrir l'impression, 3 s au maximum.
+  const images = Array.from(w.document.images).filter((img) => !img.complete);
+  const ready = Promise.race([
+    Promise.all(images.map((img) => new Promise((resolve) => { img.onload = img.onerror = resolve; }))),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
+  void ready.then(() => setTimeout(() => w.print(), 200));
   return true;
 }
 
