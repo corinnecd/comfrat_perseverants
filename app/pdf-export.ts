@@ -66,6 +66,8 @@ export async function downloadTablePdf(opts: {
   filename: string; landscape?: boolean;
   /** Indices des lignes à surligner (enfants) et légende associée. */
   highlightRows?: number[]; highlightLegend?: string;
+  /** Indices des lignes à mettre en gras. */
+  boldRows?: number[];
   columnStyles?: Record<number, {cellWidth?: number | 'auto' | 'wrap'; halign?: 'left' | 'right' | 'center'; fontStyle?: 'bold' | 'normal'}>;
 }) {
   const {doc, top} = await newDoc(opts.title, opts.subtitle, opts.landscape);
@@ -82,6 +84,7 @@ export async function downloadTablePdf(opts: {
     y += 5;
   }
   const highlight = new Set(opts.highlightRows || []);
+  const bold = new Set(opts.boldRows || []);
   autoTable(doc, {
     startY: y,
     head: [opts.head.map(clean)],
@@ -92,6 +95,7 @@ export async function downloadTablePdf(opts: {
     alternateRowStyles: {fillColor: [253, 250, 244]},
     columnStyles: opts.columnStyles,
     didParseCell: (data) => {
+      if (data.section === 'body' && bold.has(data.row.index)) data.cell.styles.fontStyle = 'bold';
       if (data.section === 'body' && highlight.has(data.row.index)) {
         data.cell.styles.fillColor = CHILD_FILL;
         data.cell.styles.textColor = [110, 74, 6];
