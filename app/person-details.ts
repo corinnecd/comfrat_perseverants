@@ -1,6 +1,8 @@
 export const AGE_RANGES = ['14 ans ou moins', '15 à 18 ans', '19 à 25 ans', '26 à 40 ans', '41 à 55 ans', 'Plus de 55 ans'] as const;
 /** Tranches d'âge des enfants (moins de 16 ans). */
 export const CHILD_AGE_RANGES = ['Moins de 3 ans', '3 à 5 ans', '6 à 10 ans', '11 à 15 ans'] as const;
+/** Tranches des moins de 18 ans parmi les tranches adultes : date de naissance complète requise. */
+export const YOUNG_AGE_RANGES: readonly string[] = ['14 ans ou moins', '15 à 18 ans'];
 export const BIRTH_MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 /** Véhiculé(e) : 'oui' | 'non' | null (non renseigné). */
 export const VEHICLE_OPTIONS = [['oui', 'Oui'], ['non', 'Non']] as const;
@@ -10,16 +12,31 @@ export function parseVehicle(value: unknown): 'oui' | 'non' | null {
   if (value === 'oui' || value === 'non') return value;
   throw Error('Véhiculé(e) : répondez oui ou non.');
 }
-export function parsePersonDetails(body: Record<string, unknown>) {
-  const day = body.birthday_day, month = body.birthday_month, age = body.age_range;
+/** Plage d'années de naissance acceptée. Borne haute : année courante. */
+export const MIN_BIRTH_YEAR = 1900;
+export function parsePersonDetails(body: Record<string, unknown>, opts: {requireYear?: boolean} = {}) {
+  const day = body.birthday_day, month = body.birthday_month, year = body.birthday_year, age = body.age_range;
   const absent = (value: unknown) => value === undefined || value === null || value === '';
-  let birthday_day: number | null = null, birthday_month: number | null = null;
+  let birthday_day: number | null = null, birthday_month: number | null = null, birthday_year: number | null = null;
   if (!absent(day) || !absent(month)) {
     if (absent(day) || absent(month) || !['string', 'number'].includes(typeof day) || !['string', 'number'].includes(typeof month)) throw Error('Choisis le jour et le mois de ton anniversaire.');
     birthday_day = Number(day); birthday_month = Number(month);
     const limits = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     if (!Number.isInteger(birthday_month) || birthday_month < 1 || birthday_month > 12 || !Number.isInteger(birthday_day) || birthday_day < 1 || birthday_day > limits[birthday_month - 1]) throw Error('Cette date d’anniversaire n’existe pas. Vérifie le jour et le mois.');
   }
+  if (!absent(year)) {
+    if (!['string', 'number'].includes(typeof year)) throw Error('Indique une année de naissance valide.');
+    birthday_year = Number(year);
+    const now = new Date().getUTCFullYear();
+    if (!Number.isInteger(birthday_year) || birthday_year < MIN_BIRTH_YEAR || birthday_year > now) throw Error('Indique une année de naissance valide.');
+  }
+  if (opts.requireYear && !birthday_year) throw Error('Indique l’année de naissance de l’enfant.');
+  if (birthday_year && (!birthday_day || !birthday_month)) throw Error('Indique le jour, le mois et l’année de naissance.');
   if (!absent(age) && (typeof age !== 'string' || !([...AGE_RANGES, ...CHILD_AGE_RANGES] as string[]).includes(age))) throw Error('Choisis une tranche d’âge proposée dans la liste.');
-  return {birthday_day, birthday_month, age_range: absent(age) ? null : age as string, vehicle: parseVehicle(body.vehicle)};
+  const ageValue = absent(age) ? null : age as string;
+  // Pour les moins de 18 ans, la date de naissance complète (jour, mois, année) est obligatoire.
+  if (ageValue && YOUNG_AGE_RANGES.includes(ageValue) && (!birthday_day || !birthday_month || !birthday_year)) {
+    throw Error('Pour les moins de 18 ans, indique le jour, le mois et l’année de naissance.');
+  }
+  return {birthday_day, birthday_month, birthday_year, age_range: ageValue, vehicle: parseVehicle(body.vehicle)};
 }

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 const json = (data: unknown, status = 200) => Response.json(data, {status, headers: {'Cache-Control': 'no-store'}});
 
 type Parent = {id: string; email: string; city: string; department: string};
-type ChildRow = {id: string; first: string; last: string; phone: string; birthday_day: number | null; birthday_month: number | null; age_range: string | null};
+type ChildRow = {id: string; first: string; last: string; phone: string; birthday_day: number | null; birthday_month: number | null; birthday_year: number | null; age_range: string | null};
 
 /** Le parent est reconnu par son QR personnel (même jeton que pour sa propre présence). */
 async function parentFrom(token: unknown): Promise<Parent | null> {
@@ -23,7 +23,7 @@ async function meetingDay() {
 
 async function listChildren(parentId: string, day: string | null) {
   const d = db();
-  const rows = await d.prepare('SELECT p.id,p.first,p.last,p.phone,pd.birthday_day,pd.birthday_month,pd.age_range FROM person_parents pp JOIN people p ON p.id=pp.child LEFT JOIN person_details pd ON pd.person=p.id WHERE pp.parent=? ORDER BY p.first').bind(parentId).all<ChildRow>();
+  const rows = await d.prepare('SELECT p.id,p.first,p.last,p.phone,pd.birthday_day,pd.birthday_month,pd.birthday_year,pd.age_range FROM person_parents pp JOIN people p ON p.id=pp.child LEFT JOIN person_details pd ON pd.person=p.id WHERE pp.parent=? ORDER BY p.first').bind(parentId).all<ChildRow>();
   const present = day ? new Set((await d.prepare('SELECT a.person FROM attendance a JOIN person_parents pp ON pp.child=a.person WHERE pp.parent=? AND a.day=?').bind(parentId, day).all<{person: string}>()).results.map((r) => r.person)) : new Set<string>();
   return rows.results.map((c) => ({...c, present: present.has(c.id)}));
 }

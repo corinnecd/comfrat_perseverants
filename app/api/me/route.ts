@@ -6,7 +6,7 @@ import {parsePersonDetails, parseVehicle} from '../../person-details';
 export const dynamic = 'force-dynamic';
 const json = (data: unknown, status = 200) => Response.json(data, {status, headers: {'Cache-Control': 'no-store'}});
 
-type Me = {id: string; first: string; last: string; email: string; phone: string; city: string; department: string; status: string; birthday_day: number | null; birthday_month: number | null; age_range: string | null; vehicle: string | null};
+type Me = {id: string; first: string; last: string; email: string; phone: string; city: string; department: string; status: string; birthday_day: number | null; birthday_month: number | null; birthday_year: number | null; age_range: string | null; vehicle: string | null};
 
 /**
  * « Modifier mes informations » : la personne voit et corrige SA fiche.
@@ -17,15 +17,15 @@ async function me(req: Request, token?: unknown): Promise<Me | null> {
   const t = typeof token === 'string' && token ? token : parseCookie(req, 'comfrat_person');
   if (!t || t.length > 200) return null;
   await ensurePersonDetails();
-  return db().prepare("SELECT p.id,p.first,p.last,p.email,p.phone,p.city,p.department,p.status,pd.birthday_day,pd.birthday_month,pd.age_range,pd.vehicle FROM people p LEFT JOIN person_details pd ON pd.person=p.id WHERE p.token=? AND p.status<>'Enfant'").bind(t).first<Me>();
+  return db().prepare("SELECT p.id,p.first,p.last,p.email,p.phone,p.city,p.department,p.status,pd.birthday_day,pd.birthday_month,pd.birthday_year,pd.age_range,pd.vehicle FROM people p LEFT JOIN person_details pd ON pd.person=p.id WHERE p.token=? AND p.status<>'Enfant'").bind(t).first<Me>();
 }
 
 export async function GET(req: Request) {
   try {
     const person = await me(req, new URL(req.url).searchParams.get('token'));
     if (!person) return json({error: 'Votre fiche n’a pas été retrouvée. Scannez votre QR personnel.'}, 401);
-    const {first, last, email, phone, city, department, birthday_day, birthday_month, age_range, vehicle} = person;
-    return json({person: {first, last, email, phone, city, department, birthday_day, birthday_month, age_range, vehicle}});
+    const {first, last, email, phone, city, department, birthday_day, birthday_month, birthday_year, age_range, vehicle} = person;
+    return json({person: {first, last, email, phone, city, department, birthday_day, birthday_month, birthday_year, age_range, vehicle}});
   } catch (e) {
     console.error(e);
     return json({error: 'Service indisponible. Réessayez.'}, 503);
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     try {
       await d.batch([
         d.prepare('UPDATE people SET first=?,last=?,email=?,phone=?,city=?,department=? WHERE id=?').bind((b.first as string).trim(), (b.last as string).trim(), (b.email as string).trim().toLowerCase(), (b.phone as string).trim(), (b.city as string).trim(), (b.department as string).trim(), person.id),
-        d.prepare('INSERT INTO person_details(person,birthday_day,birthday_month,age_range,vehicle) VALUES(?,?,?,?,?) ON CONFLICT(person) DO UPDATE SET birthday_day=excluded.birthday_day,birthday_month=excluded.birthday_month,age_range=excluded.age_range,vehicle=excluded.vehicle').bind(person.id, details.birthday_day, details.birthday_month, details.age_range, details.vehicle),
+        d.prepare('INSERT INTO person_details(person,birthday_day,birthday_month,birthday_year,age_range,vehicle) VALUES(?,?,?,?,?,?) ON CONFLICT(person) DO UPDATE SET birthday_day=excluded.birthday_day,birthday_month=excluded.birthday_month,birthday_year=excluded.birthday_year,age_range=excluded.age_range,vehicle=excluded.vehicle').bind(person.id, details.birthday_day, details.birthday_month, details.birthday_year, details.age_range, details.vehicle),
       ]);
     } catch (e) {
       if (isUniqueViolation(e)) return json({error: 'Une autre fiche porte déjà ce prénom, ce nom et cet e-mail. Demandez de l’aide à l’accueil.'}, 409);
