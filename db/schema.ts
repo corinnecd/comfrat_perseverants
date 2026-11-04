@@ -17,8 +17,10 @@ export const SCHEMA: string[] = [
   "CREATE TABLE IF NOT EXISTS feedback_access_attempts (\n  ip_hash      TEXT PRIMARY KEY NOT NULL,\n  window_start TEXT NOT NULL,\n  attempts     INTEGER NOT NULL DEFAULT 0\n)",
   "CREATE TABLE IF NOT EXISTS team_access_sessions (\n  token_hash TEXT PRIMARY KEY NOT NULL,\n  expires_at TEXT NOT NULL,\n  created_at TEXT NOT NULL\n)",
   "CREATE TABLE IF NOT EXISTS team_access_attempts (\n  ip_hash      TEXT PRIMARY KEY NOT NULL,\n  window_start TEXT NOT NULL,\n  attempts     INTEGER NOT NULL DEFAULT 0\n)",
-  "CREATE TABLE IF NOT EXISTS person_parents (\n  child   TEXT PRIMARY KEY NOT NULL REFERENCES people (id),\n  parent  TEXT NOT NULL REFERENCES people (id),\n  created TEXT NOT NULL\n)",
+  "CREATE TABLE IF NOT EXISTS person_parents (\n  child   TEXT NOT NULL REFERENCES people (id),\n  parent  TEXT NOT NULL REFERENCES people (id),\n  created TEXT NOT NULL,\n  PRIMARY KEY (child, parent)\n)",
   "CREATE INDEX IF NOT EXISTS person_parents_parent ON person_parents (parent)",
+  // Si une base existante a encore une PK sur (child) seul, on bascule vers (child, parent).
+  "DO $$ DECLARE pk_name TEXT; pk_cols INTEGER; BEGIN SELECT tc.constraint_name,(SELECT COUNT(*) FROM information_schema.key_column_usage k WHERE k.constraint_name=tc.constraint_name AND k.table_schema=tc.table_schema AND k.table_name=tc.table_name) INTO pk_name,pk_cols FROM information_schema.table_constraints tc WHERE tc.table_name='person_parents' AND tc.constraint_type='PRIMARY KEY'; IF pk_name IS NOT NULL AND pk_cols=1 THEN EXECUTE format('ALTER TABLE person_parents DROP CONSTRAINT %I', pk_name); ALTER TABLE person_parents ADD PRIMARY KEY (child, parent); END IF; END$$",
   "CREATE TABLE IF NOT EXISTS accueil_access_sessions (\n  token_hash TEXT PRIMARY KEY NOT NULL,\n  expires_at TEXT NOT NULL,\n  created_at TEXT NOT NULL\n)",
   "CREATE TABLE IF NOT EXISTS correction_requests (\n  id       TEXT PRIMARY KEY NOT NULL,\n  person   TEXT NOT NULL REFERENCES people (id),\n  message  TEXT NOT NULL,\n  created  TEXT NOT NULL,\n  resolved TEXT\n)",
   "CREATE TABLE IF NOT EXISTS family_headcount (\n  day     TEXT PRIMARY KEY NOT NULL,\n  adults  INTEGER NOT NULL,\n  updated TEXT NOT NULL\n)",
