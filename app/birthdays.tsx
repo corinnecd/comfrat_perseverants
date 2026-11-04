@@ -25,7 +25,7 @@ export default function BirthdaysPage({people, today}: {people: Person[]; today:
     .sort((a, b) => a.first.localeCompare(b.first, 'fr'));
   const upcoming = withBirthday
     .map((p) => ({p, date: nextBirthday(p.birthday_day!, p.birthday_month!, today)}))
-    .filter(({date}) => date !== sunday && (toDate(date).getTime() - toDate(today).getTime()) / DAY <= 30)
+    .filter(({date}) => (toDate(date).getTime() - toDate(today).getTime()) / DAY <= 30)
     .sort((a, b) => a.date.localeCompare(b.date) || a.p.first.localeCompare(b.p.first, 'fr'));
   const sundayText = dateLabel(sunday, {weekday: 'long', day: 'numeric', month: 'long'});
   const kicker = weekday === 0 ? `Aujourd’hui, ${sundayText}` : weekday === 6 ? `Demain, ${sundayText}` : sundayText.replace(/^./, (c) => c.toUpperCase());

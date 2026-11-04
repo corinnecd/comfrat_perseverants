@@ -2,9 +2,13 @@
 import {useState} from 'react';
 import {Baby, Check, Plus, UserPlus} from 'lucide-react';
 import {BIRTH_MONTHS, CHILD_AGE_RANGES} from './person-details';
+import {computeAge} from './birthday-utils';
 
-type Child = {id: string; first: string; last: string; birthday_day: number | null; birthday_month: number | null; age_range: string | null; present: boolean};
-const empty = {first: '', last: '', phone: '', birthday_day: '', birthday_month: '', age_range: '', consent: false};
+type Child = {id: string; first: string; last: string; birthday_day: number | null; birthday_month: number | null; birthday_year: number | null; age_range: string | null; present: boolean};
+const empty = {first: '', last: '', phone: '', birthday_day: '', birthday_month: '', birthday_year: '', age_range: '', consent: false};
+const CURRENT_YEAR = new Date().getUTCFullYear();
+/** Années proposées : 18 dernières années, de la plus récente à la plus ancienne (enfants de moins de 16 ans + marge). */
+const CHILD_BIRTH_YEARS = Array.from({length: 18}, (_, i) => CURRENT_YEAR - i);
 
 /** Après la confirmation de présence d'un parent : « Mon enfant est présent ». */
 export default function ChildrenPresence({token}: {token: string}) {
@@ -57,7 +61,7 @@ export default function ChildrenPresence({token}: {token: string}) {
         <ul className="children-list">
           {children.map((c) => (
             <li key={c.id}>
-              <span><strong>{c.first} {c.last}</strong>{c.age_range && <small>{c.age_range}</small>}</span>
+              <span><strong>{c.first} {c.last}</strong>{(() => { const age = computeAge(c.birthday_day, c.birthday_month, c.birthday_year, new Date().toISOString().slice(0, 10)); return age !== null ? <small>{age} an{age > 1 ? 's' : ''}</small> : c.age_range ? <small>{c.age_range}</small> : null; })()}</span>
               {c.present
                 ? <span className="children-present"><Check size={15}/> Présent·e</span>
                 : <button type="button" className="secondary" disabled={busy || !meetingOpen} onClick={() => send({action: 'present', id: c.id}, `${c.first} est bien enregistré·e comme présent·e.`)}><Check size={15}/> Présent·e</button>}
@@ -73,8 +77,9 @@ export default function ChildrenPresence({token}: {token: string}) {
           <div className="form-grid">
             <label>Prénom de l’enfant<input required maxLength={200} value={form.first} onChange={set('first')} autoComplete="off"/></label>
             <label>Nom de l’enfant<input required maxLength={200} value={form.last} onChange={set('last')} autoComplete="off"/></label>
-            <label>Anniversaire · jour<select required value={form.birthday_day} onChange={set('birthday_day')}><option value="">Jour</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select></label>
-            <label>Anniversaire · mois<select required value={form.birthday_month} onChange={set('birthday_month')}><option value="">Mois</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
+            <label>Naissance · jour<select required value={form.birthday_day} onChange={set('birthday_day')}><option value="">Jour</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select></label>
+            <label>Naissance · mois<select required value={form.birthday_month} onChange={set('birthday_month')}><option value="">Mois</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
+            <label>Naissance · année<select required value={form.birthday_year} onChange={set('birthday_year')}><option value="">Année</option>{CHILD_BIRTH_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
           </div>
           <label>Tranche d’âge<select required value={form.age_range} onChange={set('age_range')}><option value="">Choisir</option>{CHILD_AGE_RANGES.map((a) => <option key={a} value={a}>{a}</option>)}</select></label>
           <label>Téléphone de l’enfant <small>(facultatif)</small><input type="tel" maxLength={25} value={form.phone} onChange={set('phone')} autoComplete="off"/></label>

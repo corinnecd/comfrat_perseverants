@@ -9,6 +9,15 @@ export function birthdayOn(day: number | null | undefined, month: number | null 
   return m === month && d === target;
 }
 
+/** Âge atteint (en années) à la date `asOf` (AAAA-MM-JJ), ou null si une valeur manque. */
+export function computeAge(day: number | null | undefined, month: number | null | undefined, year: number | null | undefined, asOf: string): number | null {
+  if (!day || !month || !year || !/^\d{4}-\d{2}-\d{2}$/.test(asOf)) return null;
+  const [ay, am, ad] = asOf.split('-').map(Number);
+  let age = ay - year;
+  if (am < month || (am === month && ad < day)) age -= 1;
+  return age >= 0 && age < 130 ? age : null;
+}
+
 /** Prochaine date (incluse) de l'anniversaire à partir de `from`. */
 export function nextBirthday(day: number, month: number, from: string): string {
   const year = Number(from.slice(0, 4));

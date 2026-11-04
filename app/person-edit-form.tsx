@@ -4,7 +4,9 @@ import VehicleField from './vehicle-field';
 import {Check} from 'lucide-react';
 import type {Person} from './data';
 import {ALL_STATUSES, CHILD_STATUS} from './data';
-import {AGE_RANGES, BIRTH_MONTHS, CHILD_AGE_RANGES} from './person-details';
+import {AGE_RANGES, BIRTH_MONTHS, CHILD_AGE_RANGES, YOUNG_AGE_RANGES} from './person-details';
+const CURRENT_YEAR = new Date().getUTCFullYear();
+const YOUNG_YEARS = Array.from({length: 22}, (_, i) => CURRENT_YEAR - i);
 
 /** Formulaire de modification d'une fiche (équipe). Mêmes champs et mêmes contrôles que l'inscription. */
 export default function PersonEditForm({person, onSaved, onCancel}: {person: Person; onSaved: (updated: Person) => void; onCancel: () => void}) {
@@ -13,10 +15,12 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
     city: person.city, department: person.department, status: person.status, inviter: person.inviter || '',
     birthday_day: person.birthday_day ? String(person.birthday_day) : '',
     birthday_month: person.birthday_month ? String(person.birthday_month) : '',
+    birthday_year: person.birthday_year ? String(person.birthday_year) : '',
     age_range: person.age_range || '',
     vehicle: person.vehicle || '',
   });
   const isChild = values.status === CHILD_STATUS;
+  const needsYear = isChild || YOUNG_AGE_RANGES.includes(values.age_range);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (key: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setValues((v) => ({...v, [key]: e.target.value}));
@@ -35,6 +39,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
         inviter: values.status === 'Invité' ? values.inviter : '',
         birthday_day: values.birthday_day ? Number(values.birthday_day) : null,
         birthday_month: values.birthday_month ? Number(values.birthday_month) : null,
+        birthday_year: values.birthday_year ? Number(values.birthday_year) : null,
         age_range: values.age_range || null,
         vehicle: values.vehicle || null,
       });
@@ -62,12 +67,15 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
       </label>
       {values.status === 'Invité' && <label>Invité·e par<input required maxLength={200} value={values.inviter} onChange={set('inviter')}/></label>}
       <div className="form-grid">
-        <label>Anniversaire · jour
-          <select value={values.birthday_day} onChange={set('birthday_day')} required={!!values.birthday_month}><option value="">—</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select>
+        <label>{needsYear ? 'Naissance · jour' : 'Anniversaire · jour'}
+          <select value={values.birthday_day} onChange={set('birthday_day')} required={!!values.birthday_month || needsYear}><option value="">—</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select>
         </label>
-        <label>Anniversaire · mois
-          <select value={values.birthday_month} onChange={set('birthday_month')} required={!!values.birthday_day}><option value="">—</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
+        <label>{needsYear ? 'Naissance · mois' : 'Anniversaire · mois'}
+          <select value={values.birthday_month} onChange={set('birthday_month')} required={!!values.birthday_day || needsYear}><option value="">—</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select>
         </label>
+        {needsYear && <label>Naissance · année
+          <select value={values.birthday_year} onChange={set('birthday_year')} required><option value="">—</option>{YOUNG_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}</select>
+        </label>}
       </div>
       <label>Tranche d’âge
         <select value={values.age_range} onChange={set('age_range')}><option value="">Non renseignée</option>{(isChild ? CHILD_AGE_RANGES : AGE_RANGES).map((a) => <option key={a} value={a}>{a}</option>)}</select>

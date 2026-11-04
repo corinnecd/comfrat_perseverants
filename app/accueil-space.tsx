@@ -11,7 +11,9 @@ import {SundayQrCard} from './sunday-qr';
 
 type Light = Pick<Person, 'id' | 'first' | 'last' | 'status' | 'birthday_day' | 'birthday_month'>;
 const normalize = (v: string) => v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-const emptyChild = {first: '', last: '', phone: '', birthday_day: '', birthday_month: '', age_range: '', consent: false};
+const emptyChild = {first: '', last: '', phone: '', birthday_day: '', birthday_month: '', birthday_year: '', age_range: '', consent: false};
+const CURRENT_YEAR = new Date().getUTCFullYear();
+const CHILD_BIRTH_YEARS = Array.from({length: 18}, (_, i) => CURRENT_YEAR - i);
 
 /** Espace des bénévoles de l'accueil : noms, présences du jour et anniversaires uniquement. */
 /** Bloc présences des bénévoles : recherche par nom, présence en un clic, ajout d'un enfant, liste des présents. */
@@ -106,8 +108,9 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
                   <div className="form-grid">
                     <label>Prénom<input required maxLength={200} value={child.first} onChange={setC('first')}/></label>
                     <label>Nom<input required maxLength={200} value={child.last} onChange={setC('last')}/></label>
-                    <label>Anniversaire · jour<select required value={child.birthday_day} onChange={setC('birthday_day')}><option value="">Jour</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select></label>
-                    <label>Anniversaire · mois<select required value={child.birthday_month} onChange={setC('birthday_month')}><option value="">Mois</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
+                    <label>Naissance · jour<select required value={child.birthday_day} onChange={setC('birthday_day')}><option value="">Jour</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select></label>
+                    <label>Naissance · mois<select required value={child.birthday_month} onChange={setC('birthday_month')}><option value="">Mois</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
+                    <label>Naissance · année<select required value={child.birthday_year} onChange={setC('birthday_year')}><option value="">Année</option>{CHILD_BIRTH_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
                   </div>
                   <label>Tranche d’âge<select required value={child.age_range} onChange={setC('age_range')}><option value="">Choisir</option>{CHILD_AGE_RANGES.map((a) => <option key={a} value={a}>{a}</option>)}</select></label>
                   <label>Téléphone de l’enfant <small>(facultatif)</small><input type="tel" maxLength={25} value={child.phone} onChange={setC('phone')}/></label>
