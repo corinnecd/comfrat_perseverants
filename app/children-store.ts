@@ -28,20 +28,35 @@ export async function addChild(parent: ParentRef, b: Record<string, unknown>, da
   const phone = typeof b.phone === 'string' ? b.phone.trim() : '';
   if (phone && !/^\+?[\d\s().-]{8,25}$/.test(phone)) return {error: 'Vérifiez le numéro de téléphone de l’enfant.', status: 400};
   if (!b.birthday_day || !b.birthday_month) return {error: 'Indiquez le jour et le mois d’anniversaire de l’enfant.', status: 400};
+  if (!b.birthday_year) return {error: 'Indiquez l’année de naissance de l’enfant.', status: 400};
   if (typeof b.age_range !== 'string' || !(CHILD_AGE_RANGES as readonly string[]).includes(b.age_range)) return {error: 'Choisissez la tranche d’âge de l’enfant.', status: 400};
   let details;
-  try { details = parsePersonDetails(b); } catch (error) { return {error: (error as Error).message, status: 400}; }
+  try { details = parsePersonDetails(b, {requireYear: true}); } catch (error) { return {error: (error as Error).message, status: 400}; }
   const d = db();
   const first = (b.first as string).trim(), last = (b.last as string).trim();
   const existing = await d.prepare('SELECT p.id FROM person_parents pp JOIN people p ON p.id=pp.child WHERE pp.parent=? AND lower(p.first)=lower(?) AND lower(p.last)=lower(?)').bind(parent.id, first, last).first<{id: string}>();
   let childId = existing?.id;
   if (!childId) {
+    // Garde-fou : un même enfant (prénom + nom, sans tenir compte de la casse ni des espaces en trop)
+    // ne peut pas être enregistré deux fois le même jour, même par un autre parent.
+    // On détecte un doublon récent : fiche d'enfant créée aujourd'hui ou présence déjà enregistrée pour aujourd'hui.
+    const dupCreated = await d.prepare(
+      "SELECT id FROM people WHERE status=? AND lower(trim(first))=lower(trim(?)) AND lower(trim(last))=lower(trim(?)) AND substr(created,1,10)=? LIMIT 1"
+    ).bind(CHILD_STATUS, first, last, (day || new Date().toISOString().slice(0, 10))).first<{id: string}>();
+    const dupPresent = day
+      ? await d.prepare(
+          "SELECT p.id FROM people p JOIN attendance a ON a.person=p.id WHERE p.status=? AND lower(trim(p.first))=lower(trim(?)) AND lower(trim(p.last))=lower(trim(?)) AND a.day=? LIMIT 1"
+        ).bind(CHILD_STATUS, first, last, day).first<{id: string}>()
+      : null;
+    if (dupCreated || dupPresent) {
+      return {error: `${first} ${last} a déjà été enregistré·e aujourd’hui. Demandez à l’équipe d’accueil de vérifier avant de l’ajouter à nouveau.`, status: 409};
+    }
     childId = crypto.randomUUID();
     const now = new Date().toISOString();
     try {
       await d.batch([
         d.prepare('INSERT INTO people(id,first,last,email,phone,city,department,status,inviter,token,created) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(childId, first, last, parent.email, phone, parent.city, parent.department, CHILD_STATUS, '', crypto.randomUUID() + crypto.randomUUID(), now),
-        d.prepare('INSERT INTO person_details(person,birthday_day,birthday_month,age_range) VALUES(?,?,?,?)').bind(childId, details.birthday_day, details.birthday_month, details.age_range),
+        d.prepare('INSERT INTO person_details(person,birthday_day,birthday_month,birthday_year,age_range) VALUES(?,?,?,?,?)').bind(childId, details.birthday_day, details.birthday_month, details.birthday_year, details.age_range),
         d.prepare('INSERT INTO person_parents(child,parent,created) VALUES(?,?,?)').bind(childId, parent.id, now),
       ]);
     } catch (e) {
