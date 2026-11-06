@@ -41,7 +41,19 @@ export default function EventCheckin() {
         setCode(e); setEvent(b.event);
         if (b.event.status !== 'open') { setStep('closed'); return; }
         if (b.first) { setFirst(b.first); setAlready(!!b.alreadyPresent); setStep(b.alreadyPresent ? 'done' : 'confirm'); }
-        else setStep('link');
+        else {
+          setStep('link');
+          // Même chose que /accueil : si l'appareil a un cookie reconnu, on affiche le prénom
+          // dans le hero (« BIENVENUE CORINNE »), même si la personne n'a pas encore été
+          // check-in pour CET événement.
+          try {
+            const me = await fetch('/api/me', {cache: 'no-store'});
+            if (me.ok) {
+              const mb = (await me.json()) as {person?: {first?: string}};
+              if (live && mb?.person?.first) setFirst(mb.person.first);
+            }
+          } catch { /* sans effet */ }
+        }
       } catch (err) { if (live) { setError((err as Error).message); setStep('error'); } }
     };
     void load();
@@ -107,7 +119,7 @@ export default function EventCheckin() {
         </>}
 
         {step === 'link' && <>
-          <h1>Bienvenue !</h1>
+          <h1>BIENVENUE{first ? ` ${first.toUpperCase()}` : ''}</h1>
           <p>Déjà inscrit·e à la Com’Frat ? Un simple scan de ton QR personnel suffit : pas besoin de ressaisir tes informations.</p>
           <div className="welcome-choices">
             <button className="secondary welcome-scan-button" onClick={() => setStep('scan')}><QrCode/> Je m’enregistre</button>
@@ -117,7 +129,7 @@ export default function EventCheckin() {
         </>}
 
         {step === 'scan' && <>
-          <h1>Scanne ton QR personnel.</h1>
+          <h1>Scanne ton QR personnel{first ? `, ${first}` : ''}.</h1>
           <p>C’est le QR qui t’a été envoyé lors de ton inscription à la Com’Frat. Il t’identifie et confirme ta présence à « {event?.name} » en un clic.</p>
           <Scanner purpose="personal" onToken={(t) => void confirm(t)}/>
           <button type="button" className="secondary" onClick={() => setStep('link')}>Retour</button>
