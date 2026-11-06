@@ -1,12 +1,13 @@
 'use client';
 import {useEffect, useState} from 'react';
-import {ArrowLeft, ArrowRight, CalendarDays, Check, Clock, QrCode, ShieldCheck, UserPlus} from 'lucide-react';
+import {ArrowLeft, ArrowRight, CalendarDays, Check, Clock, Download, QrCode, ShieldCheck, UserPlus} from 'lucide-react';
 import {dateLabel} from '../dates';
 import {PERSON_STATUSES} from '../data';
 import BirthdayFields from '../birthday-fields';
 import VehicleField from '../vehicle-field';
 import VehicleQuickAsk from '../vehicle-quick-ask';
 import Scanner from '../scanner';
+import {downloadImage} from '../download-image';
 
 type PublicEvent = {name: string; day: string; opensAt: string; closesAt: string; status: 'upcoming' | 'open' | 'closed'};
 type Step = 'loading' | 'confirm' | 'link' | 'scan' | 'new' | 'done' | 'closed' | 'error';
@@ -27,6 +28,20 @@ export default function EventCheckin() {
   const [status, setStatus] = useState('Membre');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [qr, setQr] = useState('');
+  const [qrBusy, setQrBusy] = useState(false);
+
+  /** « Afficher à nouveau mon QR code » — récupère le QR personnel du propriétaire de l'appareil. */
+  async function showMyQr() {
+    setQrBusy(true); setError('');
+    try {
+      const r = await fetch('/api/checkin?mine=1', {cache: 'no-store'});
+      const b = (await r.json()) as {token?: string; error?: string};
+      if (!r.ok || !b.token) throw Error(b.error || 'QR introuvable.');
+      const lib = await import('qrcode');
+      setQr(await lib.toDataURL(location.origin + '/accueil?token=' + encodeURIComponent(b.token), {width: 300, margin: 2, color: {dark: '#162a40', light: '#ffffff'}}));
+    } catch (e) { setError((e as Error).message); } finally { setQrBusy(false); }
+  }
 
   useEffect(() => {
     const e = new URLSearchParams(location.search).get('e') || '';
@@ -113,6 +128,8 @@ export default function EventCheckin() {
           <h1>Bonjour {first},</h1>
           <p>Merci d’être là ! Confirmez votre présence à « {event?.name} ».</p>
           <button className="primary confirm-button" disabled={busy} onClick={() => void confirm()}><Check/>{busy ? 'Enregistrement…' : 'CONFIRMER MA PRÉSENCE'}</button>
+          {qr ? <div className="personal-qr"><img src={qr} alt="Votre QR personnel à conserver"/><button type="button" className="secondary" onClick={() => void downloadImage(qr, 'mon-qr-perseverants.png')}><Download size={16}/> Conserver mon QR personnel</button><small>Votre QR personnel peut associer cet appareil à votre fiche.</small></div>
+          : <button type="button" className="secondary" disabled={qrBusy} onClick={showMyQr}><QrCode size={18}/> {qrBusy ? 'Chargement…' : 'Afficher à nouveau mon QR code'}</button>}
           <button type="button" className="secondary" onClick={() => setStep('scan')}><QrCode size={16}/> Scanner pour aider quelqu’un</button>
           <small>Si une autre personne a oublié son téléphone, scannez son QR personnel : sa présence sera enregistrée sans modifier votre identité sur cet appareil.</small>
           <button type="button" className="text-link not-me" onClick={() => void notMe()}>Ce n’est pas vous, {first} ? Changer de personne</button>
@@ -124,6 +141,8 @@ export default function EventCheckin() {
           <div className="welcome-choices">
             <button className="secondary welcome-scan-button" onClick={() => setStep('scan')}><QrCode/> Je m’enregistre</button>
             <button className="primary link-registration" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
+            {first && (qr ? <div className="personal-qr"><img src={qr} alt="Votre QR personnel à conserver"/><button type="button" className="secondary" onClick={() => void downloadImage(qr, 'mon-qr-perseverants.png')}><Download size={16}/> Conserver mon QR personnel</button><small>Présentez ce QR à l’accueil ou scannez-le à l’ouverture du scan.</small></div>
+            : <button type="button" className="secondary" disabled={qrBusy} onClick={showMyQr}><QrCode size={18}/> {qrBusy ? 'Chargement…' : 'Afficher à nouveau mon QR code'}</button>)}
             <p className="welcome-hint">Déjà inscrit·e, sans ton QR ? Adresse-toi à l’équipe d’accueil : elle peut retrouver ta fiche.</p>
           </div>
         </>}
