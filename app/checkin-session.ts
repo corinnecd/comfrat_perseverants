@@ -38,16 +38,52 @@ async function ensureSessionTable() {
 }
 export async function getOrCreateActiveSession(now = new Date()) {
   const window = getCheckinWindow(now);
-  if (!window.active) return { ...window, token:null };
   await ensureSessionTable();
   const d = db();
-  let row = await d.prepare('SELECT token FROM checkin_sessions WHERE meeting_day=?').bind(window.meetingDay).first<{token:string}>();
-  if (!row) {
-    await d.prepare('INSERT INTO checkin_sessions(meeting_day,token,starts_at,expires_at,created_at) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING').bind(window.meetingDay,crypto.randomUUID()+crypto.randomUUID(),window.startsAt,window.expiresAt,now.toISOString()).run();
-    row = await d.prepare('SELECT token FROM checkin_sessions WHERE meeting_day=?').bind(window.meetingDay).first<{token:string}>();
+  if (window.active) {
+    let row = await d.prepare('SELECT token FROM checkin_sessions WHERE meeting_day=?').bind(window.meetingDay).first<{token:string}>();
+    if (!row) {
+      await d.prepare('INSERT INTO checkin_sessions(meeting_day,token,starts_at,expires_at,created_at) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING').bind(window.meetingDay,crypto.randomUUID()+crypto.randomUUID(),window.startsAt,window.expiresAt,now.toISOString()).run();
+      row = await d.prepare('SELECT token FROM checkin_sessions WHERE meeting_day=?').bind(window.meetingDay).first<{token:string}>();
+    }
+    if (!row) throw new Error('Impossible de créer le QR de la rencontre.');
+    return { ...window, token:row.token };
   }
-  if (!row) throw new Error('Impossible de créer le QR de la rencontre.');
-  return { ...window, token:row.token };
+  // Ouverture manuelle anticipée : une responsable a pré-ouvert le QR via le tableau de bord.
+  // Une ligne existe alors dans checkin_sessions avec un intervalle qui couvre « now ».
+  const nowIso = now.toISOString();
+  const manual = await d.prepare('SELECT meeting_day, token, starts_at, expires_at FROM checkin_sessions WHERE starts_at <= ? AND expires_at > ? ORDER BY meeting_day DESC LIMIT 1')
+    .bind(nowIso, nowIso)
+    .first<{meeting_day: string; token: string; starts_at: string; expires_at: string}>();
+  if (manual) {
+    return { active: true, meetingDay: manual.meeting_day, startsAt: manual.starts_at, expiresAt: manual.expires_at, nextStartAt: window.nextStartAt, token: manual.token };
+  }
+  return { ...window, token: null };
+}
+
+/** Pré-ouvre le QR du dimanche à venir, jusqu'au lundi soir 22 h. Appelé par une responsable depuis le tableau de bord. */
+export async function openCheckinNow(now = new Date()) {
+  await ensureSessionTable();
+  const d = db();
+  const today = parisDay(now);
+  const isSunday = new Date(`${today}T12:00:00Z`).getUTCDay() === 0;
+  const meetingDay = isSunday ? today : sunday(1, today);
+  const next = new Date(`${meetingDay}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const monday = next.toISOString().slice(0, 10);
+  const expiresAt = utcAtParis(monday, 22);
+  const nowIso = now.toISOString();
+  const existing = await d.prepare('SELECT token, starts_at, expires_at FROM checkin_sessions WHERE meeting_day=?').bind(meetingDay).first<{token: string; starts_at: string; expires_at: string}>();
+  if (existing) {
+    const newStarts = existing.starts_at < nowIso ? existing.starts_at : nowIso;
+    const newExpires = existing.expires_at > expiresAt ? existing.expires_at : expiresAt;
+    await d.prepare('UPDATE checkin_sessions SET starts_at=?, expires_at=? WHERE meeting_day=?').bind(newStarts, newExpires, meetingDay).run();
+    return { meetingDay, token: existing.token, startsAt: newStarts, expiresAt: newExpires };
+  }
+  const token = crypto.randomUUID() + crypto.randomUUID();
+  await d.prepare('INSERT INTO checkin_sessions(meeting_day, token, starts_at, expires_at, created_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(meetingDay, token, nowIso, expiresAt, nowIso).run();
+  return { meetingDay, token, startsAt: nowIso, expiresAt };
 }
 export function parseCookie(request: Request, name: string) {
   const prefix = `${name}=`; const value = request.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith(prefix))?.slice(prefix.length);
@@ -59,7 +95,15 @@ export function personCookie(token:string,request:Request) {
 }
 
 /** Jour de rencontre utilisé par l'équipe : le même que celui du QR quand il est ouvert. */
-export function teamMeetingDay(now = new Date()) {
+export async function teamMeetingDay(now = new Date()) {
   const window = getCheckinWindow(now);
-  return window.active ? window.meetingDay : meetingDayAt(now);
+  if (window.active) return window.meetingDay;
+  // Si une responsable a pré-ouvert manuellement le QR, on utilise le dimanche à venir associé à cette session.
+  await ensureSessionTable();
+  const d = db();
+  const nowIso = now.toISOString();
+  const manual = await d.prepare('SELECT meeting_day FROM checkin_sessions WHERE starts_at <= ? AND expires_at > ? ORDER BY meeting_day DESC LIMIT 1')
+    .bind(nowIso, nowIso)
+    .first<{meeting_day: string}>();
+  return manual?.meeting_day || meetingDayAt(now);
 }
