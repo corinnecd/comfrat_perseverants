@@ -1,6 +1,6 @@
 'use client';
 import {useEffect, useState} from 'react';
-import {ArrowLeft, ArrowRight, CalendarDays, Check, Clock, ShieldCheck, UserPlus} from 'lucide-react';
+import {ArrowLeft, ArrowRight, CalendarDays, Check, Clock, QrCode, ShieldCheck, UserPlus} from 'lucide-react';
 import {dateLabel} from '../dates';
 import {PERSON_STATUSES} from '../data';
 import BirthdayFields from '../birthday-fields';
@@ -9,7 +9,7 @@ import VehicleQuickAsk from '../vehicle-quick-ask';
 import Scanner from '../scanner';
 
 type PublicEvent = {name: string; day: string; opensAt: string; closesAt: string; status: 'upcoming' | 'open' | 'closed'};
-type Step = 'loading' | 'confirm' | 'link' | 'new' | 'done' | 'closed' | 'error';
+type Step = 'loading' | 'confirm' | 'link' | 'scan' | 'new' | 'done' | 'closed' | 'error';
 
 const hour = (iso: string) => new Date(iso).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris'}).replace(':', ' h ');
 
@@ -106,10 +106,19 @@ export default function EventCheckin() {
 
         {step === 'link' && <>
           <h1>Bienvenue !</h1>
-          <p>C’est votre première fois ? Inscrivez-vous en une minute : votre présence sera enregistrée.</p>
-          <button className="primary link-registration" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
-          <p>Déjà inscrit·e ? Scannez votre QR personnel pour retrouver votre fiche sur cet appareil.</p>
+          <p>Déjà inscrit·e à la Com’Frat ? Un simple scan de ton QR personnel suffit : pas besoin de ressaisir tes informations.</p>
+          <div className="welcome-choices">
+            <button className="secondary welcome-scan-button" onClick={() => setStep('scan')}><QrCode/> Je m’enregistre</button>
+            <button className="primary link-registration" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
+            <p className="welcome-hint">Déjà inscrit·e, sans ton QR ? Adresse-toi à l’équipe d’accueil : elle peut retrouver ta fiche.</p>
+          </div>
+        </>}
+
+        {step === 'scan' && <>
+          <h1>Scanne ton QR personnel.</h1>
+          <p>C’est le QR qui t’a été envoyé lors de ton inscription à la Com’Frat. Il t’identifie et confirme ta présence à « {event?.name} » en un clic.</p>
           <Scanner purpose="personal" onToken={(t) => void confirm(t)}/>
+          <button type="button" className="secondary" onClick={() => setStep('link')}>Retour</button>
         </>}
 
         {step === 'new' && <>
