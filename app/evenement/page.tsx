@@ -101,6 +101,8 @@ export default function EventCheckin() {
           <h1>Bonjour {first},</h1>
           <p>Merci d’être là ! Confirmez votre présence à « {event?.name} ».</p>
           <button className="primary confirm-button" disabled={busy} onClick={() => void confirm()}><Check/>{busy ? 'Enregistrement…' : 'CONFIRMER MA PRÉSENCE'}</button>
+          <button type="button" className="secondary" onClick={() => setStep('scan')}><QrCode size={16}/> Scanner pour aider quelqu’un</button>
+          <small>Si une autre personne a oublié son téléphone, scannez son QR personnel : sa présence sera enregistrée sans modifier votre identité sur cet appareil.</small>
           <button type="button" className="text-link not-me" onClick={() => void notMe()}>Ce n’est pas vous, {first} ? Changer de personne</button>
         </>}
 

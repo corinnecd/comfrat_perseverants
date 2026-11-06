@@ -38,12 +38,17 @@ export async function POST(req: Request) {
     const status = eventStatus(ev);
     if (status !== 'open') return json({error: status === 'upcoming' ? 'Le scan de cet événement n’est pas encore ouvert.' : 'Le scan de cet événement est fermé. Adressez-vous à l’accueil.'}, 410);
     const personal = typeof b.token === 'string' && b.token.length <= 200 ? b.token : null;
-    const token = personal || parseCookie(req, 'comfrat_person');
+    const existing = parseCookie(req, 'comfrat_person');
+    const token = personal || existing;
     const p = token ? await db().prepare("SELECT id,first,token FROM people WHERE token=? AND status<>'Enfant'").bind(token).first<{id: string; first: string; token: string}>() : null;
     if (!p) return json({error: personal ? 'QR personnel inconnu.' : 'Votre fiche n’est pas associée à cet appareil.'}, personal ? 404 : 401);
     const added = await markEventPresence(ev.id, p.id, personal ? 'QR personnel' : 'QR événement');
+    // Si l'appareil est déjà associé à une autre fiche (ex. responsable qui scanne pour aider),
+    // on n'écrase PAS son cookie : la présence est enregistrée pour la personne scannée,
+    // mais l'appareil reste associé à son propriétaire.
+    const setCookie = personal && (!existing || existing === p.token);
     return json({ok: true, first: p.first, alreadyPresent: !added, event: publicEvent(ev)}, 200,
-      personal ? {'Set-Cookie': personCookie(p.token, req)} : {});
+      setCookie ? {'Set-Cookie': personCookie(p.token, req)} : {});
   } catch (e) {
     console.error(e);
     return json({error: 'Enregistrement impossible. Réessayez.'}, 503);
