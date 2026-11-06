@@ -1,6 +1,6 @@
 'use client';
 import {useCallback, useEffect, useState} from 'react';
-import {CalendarPlus, Check, ChevronDown, ChevronUp, Clock, Maximize2, Play, Search, Square, Trash2, X} from 'lucide-react';
+import {CalendarPlus, Check, ChevronDown, ChevronUp, Clock, Maximize2, Pencil, Play, Search, Square, Trash2, X} from 'lucide-react';
 import {dateLabel} from './dates';
 import type {Person} from './data';
 import PresenceExport from './presence-export';
@@ -32,8 +32,10 @@ function nextSunday() {
 export default function EventsView({people}: {people: Person[]}) {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({name: 'Culte du matin', day: nextSunday(), opens: '08:30', closes: '13:00'});
+  const emptyForm = {name: 'Culte du matin', day: nextSunday(), opens: '08:30', closes: '13:00'};
+  const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [query, setQuery] = useState('');
@@ -75,8 +77,28 @@ export default function EventsView({people}: {people: Person[]}) {
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
+    if (editingId) {
+      const b = await post({action: 'update', id: editingId, ...form}, `« ${form.name} » est mis à jour.`);
+      if (b) { setShowForm(false); setEditingId(null); }
+      return;
+    }
     const b = await post({action: 'create', ...form}, `« ${form.name} » est créé. Son QR s’ouvrira automatiquement à ${form.opens.replace(':', ' h ')}.`);
     if (b) setShowForm(false);
+  }
+
+  /** Ouvre le formulaire pré-rempli avec les valeurs d'un événement existant. */
+  function startEdit(ev: EventItem) {
+    setEditingId(ev.id);
+    setForm({name: ev.name, day: ev.day, opens: hhmm(ev.opens_at), closes: hhmm(ev.closes_at)});
+    setShowForm(true);
+    setMessage(''); setError('');
+    if (typeof window !== 'undefined') window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function cancelForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
   }
 
   async function toggle(id: string) {
@@ -95,18 +117,19 @@ export default function EventsView({people}: {people: Person[]}) {
     <section className="card events-card">
       <div className="card-heading">
         <div><h2><CalendarPlus size={18}/> Événements</h2><p>Culte du matin, service, rencontre spéciale : chaque événement a son propre QR et sa liste de présents, à part de la Com’Frat.</p></div>
-        <button className="primary" onClick={() => setShowForm((v) => !v)}><CalendarPlus size={16}/> Nouvel événement</button>
+        <button className="primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setShowForm(true); } }}><CalendarPlus size={16}/> Nouvel événement</button>
       </div>
 
       {showForm && (
         <form className="event-form" onSubmit={create}>
+          {editingId && <p className="children-intro"><Pencil size={14}/> Modification de l’événement</p>}
           <label>Nom de l’événement<input required maxLength={120} value={form.name} onChange={(e) => setForm({...form, name: e.target.value})}/></label>
           <label>Date<input type="date" required value={form.day} onChange={(e) => setForm({...form, day: e.target.value})}/></label>
           <label>Ouverture du scan<input type="time" required value={form.opens} onChange={(e) => setForm({...form, opens: e.target.value})}/></label>
           <label>Fermeture du scan<input type="time" required value={form.closes} onChange={(e) => setForm({...form, closes: e.target.value})}/></label>
           <div className="event-form-actions">
-            <button className="primary" disabled={busy}><Check size={16}/> Créer l’événement</button>
-            <button type="button" className="secondary" onClick={() => setShowForm(false)}>Annuler</button>
+            <button className="primary" disabled={busy}><Check size={16}/> {editingId ? 'Enregistrer les modifications' : 'Créer l’événement'}</button>
+            <button type="button" className="secondary" onClick={cancelForm}>Annuler</button>
           </div>
         </form>
       )}
@@ -133,6 +156,7 @@ export default function EventsView({people}: {people: Person[]}) {
                 {ev.status !== 'open' && ev.status !== 'closed' && <button className="secondary" disabled={busy} onClick={() => void post({action: 'open', id: ev.id}, 'Scan ouvert.')}><Play size={15}/> Ouvrir maintenant</button>}
                 {ev.status === 'closed' && <button className="secondary" disabled={busy} onClick={() => void post({action: 'open', id: ev.id}, 'Scan rouvert.')}><Play size={15}/> Rouvrir</button>}
                 {ev.status === 'open' && <button className="secondary" disabled={busy} onClick={() => void post({action: 'close', id: ev.id}, 'Scan fermé.')}><Square size={15}/> Fermer le scan</button>}
+                <button className="secondary" onClick={() => startEdit(ev)}><Pencil size={15}/> Modifier</button>
                 <button className="secondary" onClick={() => void toggle(ev.id)}>{openId === ev.id ? <ChevronUp size={15}/> : <ChevronDown size={15}/>} Voir les présents</button>
                 {ev.present === 0 && <button className="secondary event-delete" disabled={busy} onClick={() => { if (window.confirm(`Supprimer « ${ev.name} » ?`)) void post({action: 'delete', id: ev.id}, 'Événement supprimé.'); }}><Trash2 size={15}/> Supprimer</button>}
               </div>
