@@ -10,6 +10,11 @@ type Attendee = {person: string; time: string; mode: string; first: string; last
 
 const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris'});
 const hourLabel = (iso: string) => hhmm(iso).replace(':', ' h ');
+const parisDayOf = (iso: string) => new Date(iso).toLocaleDateString('en-CA', {timeZone: 'Europe/Paris'});
+/** Jour de fermeture affiché juste si différent de l'ouverture (veillée qui traverse minuit). */
+const closeHourLabel = (opens: string, closes: string) => parisDayOf(opens) === parisDayOf(closes)
+  ? hourLabel(closes)
+  : hourLabel(closes) + ' (lendemain)';
 const STATUS_LABEL = {upcoming: 'À venir', open: 'Scan ouvert', closed: 'Terminé'} as const;
 const normalize = (v: string) => v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -118,7 +123,7 @@ export default function EventsView({people}: {people: Person[]}) {
               <div className="event-item-head">
                 <div>
                   <strong>{ev.name}</strong>
-                  <small>{dateLabel(ev.day, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})} · <Clock size={12}/> {hourLabel(ev.opens_at)} – {hourLabel(ev.closes_at)}</small>
+                  <small>{dateLabel(ev.day, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})} · <Clock size={12}/> {hourLabel(ev.opens_at)} – {closeHourLabel(ev.opens_at, ev.closes_at)}</small>
                 </div>
                 <span className={'event-badge ' + ev.status}>{STATUS_LABEL[ev.status]}</span>
                 <span className="count-pill">{ev.present} présent{ev.present > 1 ? 's' : ''}</span>

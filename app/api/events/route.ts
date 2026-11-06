@@ -45,9 +45,15 @@ export async function POST(req: Request) {
       const name = typeof b.name === 'string' ? b.name.trim() : '';
       const day = typeof b.day === 'string' ? b.day : '';
       const opens = parisTime(day, String(b.opens || ''));
-      const closes = parisTime(day, String(b.closes || ''));
+      let closes = parisTime(day, String(b.closes || ''));
       if (!name || name.length > 120) return json({error: 'Donnez un nom à l’événement (120 caractères au maximum).'}, 400);
       if (!opens || !closes) return json({error: 'Vérifiez la date et les heures d’ouverture et de fermeture.'}, 400);
+      // Veillée qui traverse minuit : si la fermeture est ≤ à l'ouverture, on la place au lendemain.
+      if (closes <= opens && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
+        const nextDay = new Date(Date.parse(day + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10);
+        const nextCloses = parisTime(nextDay, String(b.closes || ''));
+        if (nextCloses) closes = nextCloses;
+      }
       if (closes <= opens) return json({error: 'L’heure de fermeture doit être après l’heure d’ouverture.'}, 400);
       if (b.action === 'create') {
         const id = crypto.randomUUID();
