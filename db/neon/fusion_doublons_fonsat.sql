@@ -1,9 +1,10 @@
--- Fusion des doublons de Mathew Fonsat et Siloé Fonsat.
+-- Fusion des doublons de Matthew Fonsat et Siloé Fonsat.
 -- Parents concernés : Miguel Fonsat et Lisa Fonsat.
 --
 -- Principe (pour chaque enfant) :
---   1) On identifie TOUTES les fiches « Enfant » avec le même prénom + nom
---      (insensible à la casse et aux espaces superflus).
+--   1) On identifie TOUTES les fiches « Enfant » qui correspondent au prénom + nom
+--      recherché (insensible à la casse, aux espaces superflus, et aux variantes
+--      d'orthographe tolérées — « Matthew » ou « Mathew », « Siloé » ou « Siloe »).
 --   2) On garde la plus ancienne (created MIN) comme fiche de référence.
 --   3) Les présences, rattachements parents, détails, suivis, feedbacks,
 --      présences d'événements et demandes de correction des fiches en
@@ -18,7 +19,7 @@
 BEGIN;
 
 -- ----------------------------------------------------------------
--- Mathew Fonsat
+-- Matthew Fonsat (tolère les orthographes « matthew » et « mathew »)
 -- ----------------------------------------------------------------
 DO $$
 DECLARE
@@ -28,27 +29,29 @@ BEGIN
   SELECT id INTO keep_id
     FROM people
    WHERE status='Enfant'
-     AND lower(trim(first))='mathew' AND lower(trim(last))='fonsat'
+     AND lower(trim(first)) IN ('matthew', 'mathew')
+     AND lower(trim(last))='fonsat'
    ORDER BY created ASC
    LIMIT 1;
 
   IF keep_id IS NULL THEN
-    RAISE NOTICE 'Aucune fiche Mathew Fonsat trouvée. Rien à fusionner.';
+    RAISE NOTICE 'Aucune fiche Matthew Fonsat trouvée. Rien à fusionner.';
     RETURN;
   END IF;
 
   SELECT array_agg(id) INTO dup_ids
     FROM people
    WHERE status='Enfant'
-     AND lower(trim(first))='mathew' AND lower(trim(last))='fonsat'
+     AND lower(trim(first)) IN ('matthew', 'mathew')
+     AND lower(trim(last))='fonsat'
      AND id <> keep_id;
 
   IF dup_ids IS NULL OR array_length(dup_ids, 1) = 0 THEN
-    RAISE NOTICE 'Pas de doublon Mathew Fonsat à fusionner.';
+    RAISE NOTICE 'Pas de doublon Matthew Fonsat à fusionner.';
     RETURN;
   END IF;
 
-  RAISE NOTICE 'Mathew Fonsat : fiche gardée = %, doublons fusionnés = %', keep_id, dup_ids;
+  RAISE NOTICE 'Matthew Fonsat : fiche gardée = %, doublons fusionnés = %', keep_id, dup_ids;
 
   -- Présences : supprimer les lignes des doublons qui tomberaient en conflit, puis déplacer le reste.
   DELETE FROM attendance
@@ -74,7 +77,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------
--- Siloé Fonsat
+-- Siloé Fonsat (tolère « siloé » et « siloe »)
 -- ----------------------------------------------------------------
 DO $$
 DECLARE
@@ -84,7 +87,7 @@ BEGIN
   SELECT id INTO keep_id
     FROM people
    WHERE status='Enfant'
-     AND (lower(trim(first))='siloé' OR lower(trim(first))='siloe')
+     AND lower(trim(first)) IN ('siloé', 'siloe')
      AND lower(trim(last))='fonsat'
    ORDER BY created ASC
    LIMIT 1;
@@ -97,7 +100,7 @@ BEGIN
   SELECT array_agg(id) INTO dup_ids
     FROM people
    WHERE status='Enfant'
-     AND (lower(trim(first))='siloé' OR lower(trim(first))='siloe')
+     AND lower(trim(first)) IN ('siloé', 'siloe')
      AND lower(trim(last))='fonsat'
      AND id <> keep_id;
 
