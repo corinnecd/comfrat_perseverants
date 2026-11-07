@@ -162,3 +162,6 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 @media(max-width:600px){.people-card tbody tr.child-row{box-shadow:inset 4px 0 0 #e3a529}.people-card tbody tr.child-row td:first-child{box-shadow:none}}
 .recap-list .recap-strong dt{font-weight:700;color:#001b35}.recap-list .recap-strong dd{font-weight:800}.recap-list .recap-rate .recap-help{font-weight:700;color:#36475a;font-size:12px}
 .recap-list .recap-strong dt .recap-sub-label{font-weight:400;color:#6c7a89}
+.see-attendees{background:linear-gradient(110deg,#ffd879,#e7a21b)!important;border:1px solid #c6811a!important;color:#001b35!important;font-weight:650!important;box-shadow:0 4px 12px #e7a21b33!important}
+.see-attendees:hover{background:linear-gradient(110deg,#ffe095,#efb437)!important;box-shadow:0 5px 16px #e7a21b55!important}
+.see-attendees svg{color:#001b35}
