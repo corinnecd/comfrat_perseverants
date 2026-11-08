@@ -165,3 +165,9 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 .see-attendees{background:linear-gradient(110deg,#ffd879,#e7a21b)!important;border:1px solid #c6811a!important;color:#001b35!important;font-weight:650!important;box-shadow:0 4px 12px #e7a21b33!important}
 .see-attendees:hover{background:linear-gradient(110deg,#ffe095,#efb437)!important;box-shadow:0 5px 16px #e7a21b55!important}
 .see-attendees svg{color:#001b35}
+.sharing-link{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;background:#fffaf2;border:1px solid #e3d2b6;border-radius:9px;padding:8px 10px 8px 14px;font-size:13px;max-width:100%}
+.sharing-link-label{color:#97600b;font-weight:650;letter-spacing:.6px;font-size:10px;text-transform:uppercase}
+.sharing-link a{color:#001b35;font-weight:600;text-decoration:none;word-break:break-all}
+.sharing-link a:hover{text-decoration:underline}
+.sharing-link button{display:inline-flex;align-items:center;gap:6px;background:#001b35;color:#fff;border:0;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer}
+.sharing-link button:hover{background:#14354f}
