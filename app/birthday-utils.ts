@@ -19,6 +19,16 @@ export function computeAge(day: number | null | undefined, month: number | null 
 }
 
 /** Prochaine date (incluse) de l'anniversaire à partir de `from`. */
+/** Dernier anniversaire strictement avant `before` (AAAA-MM-JJ). */
+export function lastBirthday(day: number, month: number, before: string): string {
+  const year = Number(before.slice(0, 4));
+  for (let y = year; y >= year - 1; y--) {
+    const d = month === 2 && day === 29 && !isLeap(y) ? 28 : day;
+    const candidate = `${y}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (candidate < before) return candidate;
+  }
+  return before;
+}
 export function nextBirthday(day: number, month: number, from: string): string {
   const year = Number(from.slice(0, 4));
   for (let y = year; y <= year + 1; y++) {

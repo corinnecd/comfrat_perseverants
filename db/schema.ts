@@ -31,4 +31,6 @@ export const SCHEMA: string[] = [
   "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS birthday_year INTEGER",
   "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS serves TEXT",
   "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS service_department TEXT",
+  // « A été recontacté·e » : date du contact ; la personne sort définitivement de « À recontacter ».
+  "ALTER TABLE followups ADD COLUMN IF NOT EXISTS recontacted TEXT",
 ];

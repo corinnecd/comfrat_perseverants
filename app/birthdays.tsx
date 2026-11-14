@@ -1,8 +1,16 @@
 'use client';
-import {Cake, CalendarHeart, Gift, PartyPopper} from 'lucide-react';
+import {useState} from 'react';
+import {Cake, CalendarHeart, Gift, History, PartyPopper} from 'lucide-react';
 import type {Person} from './data';
 import {dateLabel} from './dates';
-import {nextBirthday} from './birthday-utils';
+import {lastBirthday, nextBirthday} from './birthday-utils';
+
+/** Filtre des anniversaires déjà passés, pour rattraper ceux qu'on aurait manqués. */
+const PAST_RANGES = [
+  {key: '7', label: '7 derniers jours', days: 7},
+  {key: '30', label: '30 derniers jours', days: 30},
+  {key: '90', label: '3 derniers mois', days: 91},
+] as const;
 
 const DAY = 86400000;
 const toDate = (day: string) => new Date(day + 'T12:00:00Z');
@@ -27,6 +35,16 @@ export default function BirthdaysPage({people, today}: {people: Person[]; today:
     .map((p) => ({p, date: nextBirthday(p.birthday_day!, p.birthday_month!, today)}))
     .filter(({date}) => (toDate(date).getTime() - toDate(today).getTime()) / DAY <= 30)
     .sort((a, b) => a.date.localeCompare(b.date) || a.p.first.localeCompare(b.p.first, 'fr'));
+  const [range, setRange] = useState<(typeof PAST_RANGES)[number]['key']>('7');
+  const rangeDays = PAST_RANGES.find((r) => r.key === range)!.days;
+  const past = withBirthday
+    .map((p) => ({p, date: lastBirthday(p.birthday_day!, p.birthday_month!, today)}))
+    .filter(({date}) => (toDate(today).getTime() - toDate(date).getTime()) / DAY <= rangeDays)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.p.first.localeCompare(b.p.first, 'fr'));
+  const daysAgo = (date: string) => {
+    const n = Math.round((toDate(today).getTime() - toDate(date).getTime()) / DAY);
+    return n === 1 ? 'Hier' : `Il y a ${n} jours`;
+  };
   const sundayText = dateLabel(sunday, {weekday: 'long', day: 'numeric', month: 'long'});
   const kicker = weekday === 0 ? `Aujourd’hui, ${sundayText}` : weekday === 6 ? `Demain, ${sundayText}` : sundayText.replace(/^./, (c) => c.toUpperCase());
   const inDays = (date: string) => {
@@ -75,6 +93,31 @@ export default function BirthdaysPage({people, today}: {people: Person[]; today:
           </ul>
         ) : (
           <div className="empty"><Gift size={28}/><h3>Aucun anniversaire dans les 30 prochains jours</h3><p>Les dates s’ajoutent à l’inscription ou depuis « Modifier la fiche ».</p></div>
+        )}
+      </section>
+
+      <section className="card birthday-upcoming birthday-past">
+        <div className="card-heading">
+          <div><h2><History size={18}/> Anniversaires passés</h2><p>Pour rattraper un anniversaire manqué : un petit mot, même en retard, fait toujours plaisir.</p></div>
+          <span className="count-pill">{past.length}</span>
+        </div>
+        <div className="birthday-past-filters" role="group" aria-label="Période des anniversaires passés">
+          {PAST_RANGES.map((r) => (
+            <button key={r.key} type="button" className={range === r.key ? 'primary' : 'secondary'} aria-pressed={range === r.key} onClick={() => setRange(r.key)}>{r.label}</button>
+          ))}
+        </div>
+        {past.length ? (
+          <ul className="birthday-list">
+            {past.map(({p, date}, i) => (
+              <li key={p.id}>
+                <span className={'birthday-avatar small tone-' + (i % 5)}>{initials(p)}</span>
+                <span className="birthday-list-name"><strong>{p.first} {p.last.toUpperCase()}</strong><small>{dateLabel(date, {weekday: 'long', day: 'numeric', month: 'long'})}</small></span>
+                <span className="birthday-when">{daysAgo(date)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="empty"><Gift size={28}/><h3>Aucun anniversaire sur cette période</h3><p>Choisissez une période plus longue pour remonter plus loin.</p></div>
         )}
         <p className="birthday-note">{withBirthday.length} personne{withBirthday.length > 1 ? 's' : ''} sur {people.length} {withBirthday.length > 1 ? 'ont' : 'a'} renseigné son anniversaire.</p>
       </section>

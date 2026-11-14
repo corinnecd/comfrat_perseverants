@@ -3,6 +3,9 @@ import {lastCompletedSunday} from './meeting-calendar';
 export {parisDay,sunday,dateLabel} from './dates';
 export const PERSON_STATUSES = ['Pasteur', 'Pilier', 'Membre', 'Nouveau', 'NA', 'NC', 'Invité'];
 export const MEMBER_STATUSES = ['Membre', 'Pilier', 'Pasteur'];
+/** « À recontacter » : uniquement les nouvelles personnes de ces statuts, inscrites depuis cette date, tant qu'elles n'ont pas été recontactées. */
+export const RECONTACT_STATUSES = ['Nouveau', 'NA', 'NC', 'NA-NC', 'Invité'];
+export const RECONTACT_SINCE = '2026-11-01';
 /** Statut réservé aux enfants de moins de 16 ans, enregistrés par un parent. */
 export const CHILD_STATUS = 'Enfant';
 /** Tous les statuts, pour l'équipe (filtres, modification d'une fiche). */
