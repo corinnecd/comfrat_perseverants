@@ -12,6 +12,18 @@ export function parseVehicle(value: unknown): 'oui' | 'non' | null {
   if (value === 'oui' || value === 'non') return value;
   throw Error('Véhiculé(e) : répondez oui ou non.');
 }
+/** « Je sers dans un département » : 'oui' | 'non' | null, et le département si 'oui'. */
+export const serviceLabel = (serves: string | null | undefined, department: string | null | undefined) =>
+  serves === 'oui' ? (department ? `Oui — ${department}` : 'Oui') : serves === 'non' ? 'Non' : '';
+export function parseService(serves: unknown, department: unknown): {serves: 'oui' | 'non' | null; service_department: string | null} {
+  if (serves === undefined || serves === null || serves === '') return {serves: null, service_department: null};
+  if (serves === 'non') return {serves: 'non', service_department: null};
+  if (serves !== 'oui') throw Error('Je sers dans un département : répondez oui ou non.');
+  const dept = typeof department === 'string' ? department.trim() : '';
+  if (!dept) throw Error('Indiquez le département dans lequel vous servez.');
+  if (dept.length > 200) throw Error('Le nom du département est trop long.');
+  return {serves: 'oui', service_department: dept};
+}
 /** Plage d'années de naissance acceptée. Borne haute : année courante. */
 export const MIN_BIRTH_YEAR = 1900;
 export function parsePersonDetails(body: Record<string, unknown>, opts: {requireYear?: boolean} = {}) {
@@ -38,5 +50,5 @@ export function parsePersonDetails(body: Record<string, unknown>, opts: {require
   if (ageValue && YOUNG_AGE_RANGES.includes(ageValue) && (!birthday_day || !birthday_month || !birthday_year)) {
     throw Error('Pour les moins de 18 ans, indique le jour, le mois et l’année de naissance.');
   }
-  return {birthday_day, birthday_month, birthday_year, age_range: ageValue, vehicle: parseVehicle(body.vehicle)};
+  return {birthday_day, birthday_month, birthday_year, age_range: ageValue, vehicle: parseVehicle(body.vehicle), ...parseService(body.serves, body.service_department)};
 }

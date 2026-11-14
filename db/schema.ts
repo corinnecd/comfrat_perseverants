@@ -29,4 +29,6 @@ export const SCHEMA: string[] = [
   "CREATE INDEX IF NOT EXISTS event_attendance_person ON event_attendance (person)",
   "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS vehicle TEXT",
   "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS birthday_year INTEGER",
+  "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS serves TEXT",
+  "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS service_department TEXT",
 ];

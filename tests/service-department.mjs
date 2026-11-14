@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+const source=ts.transpile(readFileSync('app/person-details.ts','utf8'),{module:ts.ModuleKind.ESNext});
+const {parseService,parsePersonDetails,serviceLabel}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+assert.deepEqual(parseService(undefined,undefined),{serves:null,service_department:null});
+assert.deepEqual(parseService('non','Louange'),{serves:'non',service_department:null});
+assert.deepEqual(parseService('oui','  Louange  '),{serves:'oui',service_department:'Louange'});
+assert.throws(()=>parseService('oui',''));
+assert.throws(()=>parseService('oui','   '));
+assert.throws(()=>parseService('peut-être','x'));
+assert.throws(()=>parseService('oui','x'.repeat(201)));
+const d=parsePersonDetails({serves:'oui',service_department:'Accueil'});
+assert.equal(d.serves,'oui');assert.equal(d.service_department,'Accueil');
+assert.equal(serviceLabel('oui','Accueil'),'Oui — Accueil');
+assert.equal(serviceLabel('non',null),'Non');
+assert.equal(serviceLabel(null,null),'');
+console.log('PASS: « Je sers dans un département » (oui / non, et lequel).');

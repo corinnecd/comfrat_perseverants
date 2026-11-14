@@ -1,10 +1,11 @@
 'use client';
 import {useState} from 'react';
 import VehicleField from './vehicle-field';
+import ServiceField from './service-field';
 import {Check, Pencil} from 'lucide-react';
 import {AGE_RANGES, BIRTH_MONTHS, YOUNG_AGE_RANGES} from './person-details';
 
-type Fields = {first: string; last: string; email: string; phone: string; city: string; department: string; birthday_day: string; birthday_month: string; birthday_year: string; age_range: string; vehicle: string};
+type Fields = {first: string; last: string; email: string; phone: string; city: string; department: string; birthday_day: string; birthday_month: string; birthday_year: string; age_range: string; vehicle: string; serves: string; service_department: string};
 const CURRENT_YEAR = new Date().getUTCFullYear();
 const YOUNG_YEARS = Array.from({length: 22}, (_, i) => CURRENT_YEAR - i);
 
@@ -22,7 +23,7 @@ export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (fi
       const b = (await r.json()) as {person?: Record<string, string | number | null>; error?: string};
       if (!r.ok || !b.person) throw Error(b.error || 'Fiche introuvable.');
       const p = b.person;
-      setValues({first: String(p.first ?? ''), last: String(p.last ?? ''), email: String(p.email ?? ''), phone: String(p.phone ?? ''), city: String(p.city ?? ''), department: String(p.department ?? ''), birthday_day: p.birthday_day ? String(p.birthday_day) : '', birthday_month: p.birthday_month ? String(p.birthday_month) : '', birthday_year: p.birthday_year ? String(p.birthday_year) : '', age_range: p.age_range ? String(p.age_range) : '', vehicle: p.vehicle ? String(p.vehicle) : ''});
+      setValues({first: String(p.first ?? ''), last: String(p.last ?? ''), email: String(p.email ?? ''), phone: String(p.phone ?? ''), city: String(p.city ?? ''), department: String(p.department ?? ''), birthday_day: p.birthday_day ? String(p.birthday_day) : '', birthday_month: p.birthday_month ? String(p.birthday_month) : '', birthday_year: p.birthday_year ? String(p.birthday_year) : '', age_range: p.age_range ? String(p.age_range) : '', vehicle: p.vehicle ? String(p.vehicle) : '', serves: p.serves ? String(p.serves) : '', service_department: p.service_department ? String(p.service_department) : ''});
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -39,7 +40,7 @@ export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (fi
   }
 
   const set = (k: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setValues((v) => (v ? {...v, [k]: e.target.value} : v));
-  const fields: [keyof Fields, string, string, string?][] = [['first', 'Prénom', 'text', 'given-name'], ['last', 'Nom', 'text', 'family-name'], ['email', 'E-mail', 'email', 'email'], ['phone', 'Téléphone', 'tel', 'tel'], ['city', 'Ville', 'text'], ['department', 'Département', 'text']];
+  const fields: [keyof Fields, string, string, string?][] = [['first', 'Prénom', 'text', 'given-name'], ['last', 'Nom', 'text', 'family-name'], ['email', 'E-mail', 'email', 'email'], ['phone', 'Téléphone', 'tel', 'tel'], ['city', 'Ville', 'text'], ['department', 'Code postal', 'text', 'postal-code']];
 
   if (!values) return (
     <div className="self-edit">
@@ -56,7 +57,7 @@ export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (fi
       {(() => { const requireYear = YOUNG_AGE_RANGES.includes(values.age_range); return (
       <>
       <div className="form-grid">
-        {fields.map(([k, label, type, auto]) => <label key={k}>{label}<input type={type} required maxLength={200} autoComplete={auto} value={values[k]} onChange={set(k)}/></label>)}
+        {fields.map(([k, label, type, auto]) => <label key={k}>{label}<input type={type} inputMode={k === 'department' ? 'numeric' : undefined} required maxLength={200} autoComplete={auto} value={values[k]} onChange={set(k)}/></label>)}
         <label>{requireYear ? 'Naissance · jour' : 'Anniversaire · jour'}<select value={values.birthday_day} onChange={set('birthday_day')} required={!!values.birthday_month || requireYear}><option value="">—</option>{Array.from({length: 31}, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select></label>
         <label>{requireYear ? 'Naissance · mois' : 'Anniversaire · mois'}<select value={values.birthday_month} onChange={set('birthday_month')} required={!!values.birthday_day || requireYear}><option value="">—</option>{BIRTH_MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
         {requireYear && <label>Naissance · année<select value={values.birthday_year} onChange={set('birthday_year')} required><option value="">—</option>{YOUNG_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}</select></label>}
@@ -65,6 +66,7 @@ export default function SelfEdit({token, onSaved}: {token: string; onSaved?: (fi
       </>
       ); })()}
       <VehicleField value={values.vehicle} onChange={(v) => setValues((x) => (x ? {...x, vehicle: v} : x))}/>
+      <ServiceField value={values.serves} department={values.service_department} onChange={(s, d) => setValues((x) => (x ? {...x, serves: s, service_department: d} : x))}/>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">
         <button className="primary" disabled={busy}><Check size={16}/> {busy ? 'Enregistrement…' : 'Enregistrer'}</button>

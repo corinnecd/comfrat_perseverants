@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
 import VehicleField from './vehicle-field';
+import ServiceField from './service-field';
 import {Check} from 'lucide-react';
 import type {Person} from './data';
 import {ALL_STATUSES, CHILD_STATUS} from './data';
@@ -18,6 +19,8 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
     birthday_year: person.birthday_year ? String(person.birthday_year) : '',
     age_range: person.age_range || '',
     vehicle: person.vehicle || '',
+    serves: person.serves || '',
+    service_department: person.service_department || '',
   });
   const isChild = values.status === CHILD_STATUS;
   const needsYear = isChild || YOUNG_AGE_RANGES.includes(values.age_range);
@@ -42,6 +45,8 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
         birthday_year: values.birthday_year ? Number(values.birthday_year) : null,
         age_range: values.age_range || null,
         vehicle: values.vehicle || null,
+        serves: values.serves || null,
+        service_department: values.serves === 'oui' ? values.service_department.trim() : null,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -53,7 +58,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
   const fields: [keyof typeof values, string, string, string?][] = [
     ['first', 'Prénom', 'text', 'given-name'], ['last', 'Nom', 'text', 'family-name'],
     ['email', 'E-mail', 'email', 'email'], ['phone', 'Téléphone', 'tel', 'tel'],
-    ['city', 'Ville', 'text'], ['department', 'Département', 'text'],
+    ['city', 'Ville', 'text'], ['department', 'Code postal', 'text', 'postal-code'],
   ];
   return (
     <form className="registration-form person-edit-form" onSubmit={save}>
@@ -81,6 +86,7 @@ export default function PersonEditForm({person, onSaved, onCancel}: {person: Per
         <select value={values.age_range} onChange={set('age_range')}><option value="">Non renseignée</option>{(isChild ? CHILD_AGE_RANGES : AGE_RANGES).map((a) => <option key={a} value={a}>{a}</option>)}</select>
       </label>
       {!isChild && <VehicleField value={values.vehicle} onChange={(v) => setValues((x) => ({...x, vehicle: v}))}/>}
+      {!isChild && <ServiceField value={values.serves} department={values.service_department} onChange={(s, d) => setValues((x) => ({...x, serves: s, service_department: d}))}/>}
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">
         <button className="primary" disabled={busy}><Check size={17}/> {busy ? 'Enregistrement…' : 'Enregistrer les modifications'}</button>

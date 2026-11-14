@@ -8,6 +8,8 @@ export async function ensurePersonDetails() {
   )`).run()
     .then(() => db().prepare('ALTER TABLE person_details ADD COLUMN IF NOT EXISTS vehicle TEXT').run())
     .then(() => db().prepare('ALTER TABLE person_details ADD COLUMN IF NOT EXISTS birthday_year INTEGER').run())
+    .then(() => db().prepare('ALTER TABLE person_details ADD COLUMN IF NOT EXISTS serves TEXT').run())
+    .then(() => db().prepare('ALTER TABLE person_details ADD COLUMN IF NOT EXISTS service_department TEXT').run())
     .then(() => {}).catch(error => { ready = null; throw error; });
   await ready;
 }

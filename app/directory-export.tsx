@@ -3,18 +3,19 @@ import {useState} from 'react';
 import {Copy, Send, Share2, Printer, MessageSquare, FileSpreadsheet, FileDown} from 'lucide-react';
 import {downloadTablePdf, pdfFileName} from './pdf-export';
 import {dateLabel} from './dates';
-import {BIRTH_MONTHS, vehicleLabel} from './person-details';
+import {BIRTH_MONTHS, serviceLabel, vehicleLabel} from './person-details';
 import {computeAge} from './birthday-utils';
 import {downloadCsv, escapeHtml, openPrintWindow} from './print-window';
 
 export type DirectoryRow = {
   first: string; last: string; status: string; phone: string; email: string; city: string; department: string;
-  birthday_day?: number | null; birthday_month?: number | null; birthday_year?: number | null; age_range?: string | null; parent: string; lastPresence: string; vehicle?: string | null;
+  birthday_day?: number | null; birthday_month?: number | null; birthday_year?: number | null; age_range?: string | null; parent: string; lastPresence: string; vehicle?: string | null; serves?: string | null; service_department?: string | null;
 };
 
 const birthday = (r: DirectoryRow) => r.birthday_day && r.birthday_month ? `${r.birthday_day === 1 ? '1er' : r.birthday_day} ${BIRTH_MONTHS[r.birthday_month - 1].toLowerCase()}${r.birthday_year ? ' ' + r.birthday_year : ''}` : '';
 const ageOf = (r: DirectoryRow, asOf: string) => { const a = computeAge(r.birthday_day, r.birthday_month, r.birthday_year, asOf); return a !== null ? `${a} an${a > 1 ? 's' : ''}` : r.age_range || ''; };
 const veh = (r: DirectoryRow) => r.status === 'Enfant' ? '' : vehicleLabel(r.vehicle) || 'Non renseigné';
+const serv = (r: DirectoryRow) => r.status === 'Enfant' ? '' : serviceLabel(r.serves, r.service_department) || 'Non renseigné';
 const last = (r: DirectoryRow) => r.lastPresence ? dateLabel(r.lastPresence, {day: 'numeric', month: 'long', year: 'numeric'}) : '';
 
 /**
@@ -60,8 +61,8 @@ export default function DirectoryExport({title, filterLabel, rows}: {title: stri
   function excel() {
     const slug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     downloadCsv(`${slug}-${today}.csv`, [
-      ['Prénom', 'Nom', 'Statut', 'Téléphone', 'E-mail', 'Ville', 'Département', 'Véhiculé(e)', 'Anniversaire', 'Âge', 'Parent', 'Dernière présence'],
-      ...sorted.map((r) => [r.first, r.last, r.status, r.phone, r.email, r.city, r.department, veh(r), birthday(r), ageOf(r, today), r.parent, r.lastPresence]),
+      ['Prénom', 'Nom', 'Statut', 'Téléphone', 'E-mail', 'Ville', 'Code postal', 'Véhiculé(e)', 'Sert dans un département', 'Anniversaire', 'Âge', 'Parent', 'Dernière présence'],
+      ...sorted.map((r) => [r.first, r.last, r.status, r.phone, r.email, r.city, r.department, veh(r), serv(r), birthday(r), ageOf(r, today), r.parent, r.lastPresence]),
     ]);
   }
 

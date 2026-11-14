@@ -5,6 +5,7 @@ import {dateLabel} from '../dates';
 import {PERSON_STATUSES} from '../data';
 import BirthdayFields from '../birthday-fields';
 import VehicleField from '../vehicle-field';
+import ServiceField from '../service-field';
 import VehicleQuickAsk from '../vehicle-quick-ask';
 import Scanner from '../scanner';
 import {downloadImage} from '../download-image';
@@ -163,13 +164,14 @@ export default function EventCheckin() {
           <p>Une seule inscription, pour tous nos rendez-vous.</p>
           <form onSubmit={register} className="registration-form">
             <div className="form-grid">
-              {[['first', 'Prénom', 'text'], ['last', 'Nom', 'text'], ['email', 'E-mail', 'email'], ['phone', 'Téléphone', 'tel'], ['city', 'Ville', 'text'], ['department', 'Département', 'text']].map(([name, label, type]) =>
-                <label key={name}>{label}<input name={name} type={type} required maxLength={200}/></label>)}
+              {[['first', 'Prénom', 'text'], ['last', 'Nom', 'text'], ['email', 'E-mail', 'email'], ['phone', 'Téléphone', 'tel'], ['city', 'Ville', 'text'], ['department', 'Code postal', 'text']].map(([name, label, type]) =>
+                <label key={name}>{label}<input name={name} type={type} required maxLength={200} autoComplete={name === 'department' ? 'postal-code' : undefined} inputMode={name === 'department' ? 'numeric' : undefined}/></label>)}
             </div>
             <label>Je suis<select className="event-status-select" value={status} onChange={(e) => setStatus(e.target.value)}>{PERSON_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
             <BirthdayFields/>
             {status === 'Invité' && <label>Qui vous a invité·e ?<input name="inviter" required maxLength={200} placeholder="Prénom et nom, ou « Venue spontanée »"/></label>}
             <VehicleField required/>
+            <ServiceField required/>
             <p className="privacy-note"><ShieldCheck size={18}/> Ces informations servent à vous proposer des activités qui vous correspondent le mieux. Vous pouvez demander leur correction ou suppression à votre responsable.</p>
             <button className="primary" disabled={busy}>{busy ? 'Enregistrement…' : 'M’inscrire et confirmer ma présence'}<ArrowRight size={17}/></button>
             <button type="button" className="text-link" onClick={() => setStep('link')}>Retour</button>
