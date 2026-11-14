@@ -1,6 +1,6 @@
 'use client';
 import {useEffect, useState} from 'react';
-import {Baby, Cake, Check, MessageSquareWarning, Search, Send, UserPlus, Users} from 'lucide-react';
+import {Baby, Cake, Check, MessageSquareWarning, Search, Send, UserPlus, Users, Trash2} from 'lucide-react';
 import {CHILD_STATUS} from './data';
 import {dateLabel} from './dates';
 import type {Person} from './data';
@@ -126,7 +126,7 @@ export default function AccueilPanel({showQr = true}: {showQr?: boolean}) {
             {presentList.length ? (
               <ul className="accueil-present-list">
                 {(showAll ? presentList : presentList.slice(0, 10)).map((p) => (
-                  <li key={p.id} className={p.status === CHILD_STATUS ? 'child-row' : undefined}><span className="avatar">{p.first[0]}{p.last[0]}</span><strong>{p.first} {p.last}</strong>{p.status === CHILD_STATUS && <span className="status-type child"><Baby size={12}/>Enfant</span>}{isBirthday(p) && <span className="birthday-badge"><Cake size={13}/> Anniversaire</span>}</li>
+                  <li key={p.id} className={p.status === CHILD_STATUS ? 'child-row' : undefined}><span className="avatar">{p.first[0]}{p.last[0]}</span><strong>{p.first} {p.last}</strong>{p.status === CHILD_STATUS && <span className="status-type child"><Baby size={12}/>Enfant</span>}{isBirthday(p) && <span className="birthday-badge"><Cake size={13}/> Anniversaire</span>}<button type="button" className="text-link remove-presence" disabled={busy} aria-label={`Supprimer l’enregistrement de ${p.first} ${p.last}`} onClick={() => { if (window.confirm(`Supprimer l’enregistrement de présence de ${p.first} ${p.last} pour cette rencontre ?\n\nSa fiche n’est pas supprimée.`)) void post({action: 'unattend', id: p.id}, `Présence de ${p.first} ${p.last} supprimée.`); }}><Trash2 size={14}/> Supprimer l’enregistrement</button></li>
                 ))}
               </ul>
             ) : null}
