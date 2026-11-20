@@ -53,8 +53,8 @@ export default function AlreadyRegistered({onFound, scanner, onNewRegistration}:
       {needEmail && <label>E-mail<input required type="email" maxLength={200} autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}/></label>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {notMe && <div className="not-me-panel" role="status">
-        <strong><QrCode size={17}/> Montre ton QR personnel à l’équipe d’accueil</strong>
-        <p>Ouvre la photo ou la capture de ton QR code enregistrée dans ton téléphone, et présente-la à l’équipe d’accueil : elle la scannera pour valider ta présence. Sans QR, l’équipe peut aussi retrouver ta fiche avec toi.</p>
+        <strong><UserCheck size={17}/> Adresse-toi à l’équipe d’accueil</strong>
+        <p>Vérifie d’abord l’orthographe de ton prénom et de ton nom, puis appuie à nouveau sur « Continuer ». Sinon, l’équipe d’accueil retrouvera ta fiche avec ton nom et validera ta présence. Si tu as gardé ton QR code (photo ou capture), tu peux aussi le lui montrer.</p>
         {onNewRegistration && <button type="button" className="text-link" onClick={onNewRegistration}><UserPlus size={15}/> Je ne suis pas encore inscrit·e : c’est ma première inscription</button>}
       </div>}
       <button className="primary" disabled={busy}>{busy ? 'Recherche…' : 'Continuer'} <ArrowRight size={17}/></button>
