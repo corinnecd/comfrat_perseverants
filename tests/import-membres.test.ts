@@ -1,0 +1,11 @@
+import {cleanImportRow, columnFor} from '../app/people-import';
+const eq=(a:unknown,b:unknown,m:string)=>{if(JSON.stringify(a)!==JSON.stringify(b)){console.error('FAIL',m,a,b);process.exit(1);}};
+eq(columnFor('Prénom'),'first','prenom');eq(columnFor('E-mail'),'email','email');eq(columnFor('Code postal'),'department','cp');eq(columnFor('Département de service'),'service_department','dept service');eq(columnFor('Véhiculé(e)'),'vehicle','veh');eq(columnFor('Tranche d’âge'),'age_range','age');eq(columnFor('Sert dans un département'),'serves','serves');eq(columnFor('Bizarre'),null,'unknown');
+const r=cleanImportRow({first:'Marie',last:'Lefèvre',email:'Marie@X.fr'});eq(r.row?.status,'Membre','default status');eq(r.row?.email,'marie@x.fr','email lower');
+eq(cleanImportRow({first:'A',last:'B',email:'pas-un-email'}).error,'E-mail invalide','bad email');
+eq(!!cleanImportRow({first:'A',last:'',email:'a@b.fr'}).error,true,'missing');
+eq(cleanImportRow({first:'A',last:'B',email:'a@b.fr',status:'na'}).row?.status,'NA','status ci');
+eq(!!cleanImportRow({first:'A',last:'B',email:'a@b.fr',status:'Chef'}).error,true,'bad status');
+eq(cleanImportRow({first:'A',last:'B',email:'a@b.fr',vehicle:'Oui',serves:'oui',service_department:'Louange',birthday_day:'3',birthday_month:'4'}).row?.details,{birthday_day:3,birthday_month:4,birthday_year:null,age_range:null,vehicle:'oui',serves:'oui',service_department:'Louange'},'details');
+eq(cleanImportRow({first:'A',last:'B',email:'a@b.fr',serves:'oui'}).row?.details.serves,null,'serves oui without dept -> empty');
+console.log('PASS import rows');

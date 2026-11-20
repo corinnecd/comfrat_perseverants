@@ -2,6 +2,10 @@
 import {useState} from 'react';
 import {ArrowRight, Check, QrCode, UserCheck, UserPlus, X} from 'lucide-react';
 import {Dialog, DialogContent, DialogDescription, DialogTitle} from '@/components/ui/dialog';
+import {PERSON_STATUSES} from './data';
+import BirthdayFields from './birthday-fields';
+import VehicleField from './vehicle-field';
+import ServiceField from './service-field';
 
 /**
  * « Déjà inscrit·e : je valide ma présence » — sans scanner ni QR :
@@ -15,7 +19,9 @@ export default function AlreadyRegistered({onFound, scanner, onNewRegistration}:
   const [first, setFirst] = useState(''), [last, setLast] = useState(''), [email, setEmail] = useState('');
   const [needEmail, setNeedEmail] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [scan, setScan] = useState(false);
-  const [match, setMatch] = useState<{first: string; last: string; phoneEnd: string} | null>(null);
+  const [match, setMatch] = useState<{first: string; last: string; phoneEnd: string; emailHint?: string} | null>(null);
+  const [completing, setCompleting] = useState<{token: string; first: string; last: string; email: string} | null>(null);
+  const [status, setStatus] = useState('Membre');
   const [notMe, setNotMe] = useState(false);
   const lookup = (link: boolean) => fetch('/api/checkin/retrouver', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({first, last, email, link})});
 
@@ -24,7 +30,7 @@ export default function AlreadyRegistered({onFound, scanner, onNewRegistration}:
     setBusy(true); setError(''); setNotMe(false);
     try {
       const r = await lookup(false);
-      const b = (await r.json()) as {match?: {first: string; last: string; phoneEnd: string}; needEmail?: boolean; error?: string};
+      const b = (await r.json()) as {match?: {first: string; last: string; phoneEnd: string; emailHint?: string}; needEmail?: boolean; error?: string};
       if (!r.ok) throw Error(b.error || 'Recherche impossible.');
       if (b.needEmail) { setNeedEmail(true); setError('Plusieurs personnes portent ce prénom et ce nom. Indique aussi ton e-mail.'); return; }
       if (b.match) setMatch(b.match);
@@ -36,12 +42,46 @@ export default function AlreadyRegistered({onFound, scanner, onNewRegistration}:
     setBusy(true); setError('');
     try {
       const r = await lookup(true);
-      const b = (await r.json()) as {first?: string; token?: string; error?: string};
+      const b = (await r.json()) as {first?: string; last?: string; email?: string; token?: string; incomplete?: boolean; error?: string};
       if (!r.ok || !b.token) throw Error(b.error || 'Enregistrement impossible.');
       setMatch(null);
+      // Fiche importée : on complète d'abord les informations manquantes.
+      if (b.incomplete) { setCompleting({token: b.token, first: b.first || match.first, last: b.last || match.last, email: b.email || ''}); return; }
       await onFound(b.first || match.first, b.token);
     } catch (err) { setMatch(null); setError((err as Error).message); } finally { setBusy(false); }
   }
+
+  async function complete(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!completing) return;
+    setBusy(true); setError('');
+    try {
+      const values = Object.fromEntries(new FormData(e.currentTarget));
+      const r = await fetch('/api/checkin/completer', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...values, status, token: completing.token})});
+      const b = (await r.json()) as {first?: string; token?: string; error?: string};
+      if (!r.ok || !b.token) throw Error(b.error || 'Enregistrement impossible.');
+      setCompleting(null);
+      await onFound(b.first || completing.first, b.token);
+    } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
+  }
+
+  if (completing) return (
+    <form className="registration-form complete-profile-form" onSubmit={complete}>
+      <h2>Bienvenue {completing.first} !</h2>
+      <p className="welcome-hint">Ta fiche existe déjà. Complète simplement les informations manquantes, puis valide ta présence.</p>
+      <div className="form-grid">
+        {([['first', 'Prénom', 'text', completing.first, 'given-name'], ['last', 'Nom', 'text', completing.last, 'family-name'], ['email', 'E-mail', 'email', completing.email, 'email'], ['phone', 'Téléphone', 'tel', '', 'tel'], ['city', 'Ville', 'text', '', 'address-level2'], ['department', 'Code postal', 'text', '', 'postal-code']] as const).map(([name, label, type, value, auto]) =>
+          <label key={name}>{label}<input name={name} type={type} required maxLength={200} defaultValue={value} autoComplete={auto} inputMode={name === 'department' ? 'numeric' : undefined}/></label>)}
+      </div>
+      <label>Je suis<select value={status} onChange={(e) => setStatus(e.target.value)}>{PERSON_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+      <BirthdayFields/>
+      {status === 'Invité' && <label>Qui vous a invité·e ?<input name="inviter" required maxLength={200} placeholder="Prénom et nom, ou « Venue spontanée »"/></label>}
+      <VehicleField required/>
+      <ServiceField required/>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="primary confirm-button" disabled={busy}><Check size={18}/> {busy ? 'Enregistrement…' : 'JE VALIDE MA PRÉSENCE'}</button>
+    </form>
+  );
 
   if (!open) return <button type="button" className="secondary already-registered-open" onClick={() => setOpen(true)}><UserCheck size={18}/> Déjà inscrit·e : je valide ma présence</button>;
 
@@ -66,7 +106,7 @@ export default function AlreadyRegistered({onFound, scanner, onNewRegistration}:
           <DialogDescription>Vérifie que c’est bien ta fiche avant de valider ta présence.</DialogDescription>
           {match && <div className="its-me-card">
             <strong>{match.first} {match.last.toUpperCase()}</strong>
-            {match.phoneEnd && <small>Téléphone se terminant par •• {match.phoneEnd}</small>}
+            {match.phoneEnd ? <small>Téléphone se terminant par •• {match.phoneEnd}</small> : match.emailHint ? <small>E-mail : {match.emailHint}</small> : null}
           </div>}
           <button type="button" className="primary confirm-button" disabled={busy} onClick={() => void itsMe()}><Check size={18}/> {busy ? 'Enregistrement…' : 'Oui, c’est bien moi — je valide ma présence'}</button>
           <button type="button" className="secondary" disabled={busy} onClick={() => { setMatch(null); setNotMe(true); setScan(false); }}><X size={16}/> Non, ce n’est pas moi</button>

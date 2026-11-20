@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const last = typeof b.last === 'string' ? norm(b.last) : '';
     const email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';
     if (!first || !last || first.length > 200 || last.length > 200) return json({error: 'Indiquez votre prénom et votre nom.'}, 400);
-    const rows = await db().prepare("SELECT first,last,email,phone,token FROM people WHERE status<>'Enfant'").all<{first: string; last: string; email: string; phone: string; token: string}>();
+    const rows = await db().prepare("SELECT first,last,email,phone,token,to_complete FROM people WHERE status<>'Enfant'").all<{first: string; last: string; email: string; phone: string; token: string; to_complete: string | null}>();
     let found = rows.results.filter((p) => norm(p.first) === first && norm(p.last) === last);
     if (found.length > 1 && email) found = found.filter((p) => (p.email || '').trim().toLowerCase() === email);
     if (found.length === 0) return json({error: 'Aucune fiche ne correspond à ce prénom et à ce nom. Vérifiez l’orthographe, ou demandez de l’aide à l’équipe d’accueil.'}, 404);
@@ -29,8 +29,12 @@ export async function POST(req: Request) {
     const p = found[0];
     if (b.link !== true) {
       const digits = (p.phone || '').replace(/\D/g, '');
-      return json({match: {first: p.first, last: p.last, phoneEnd: digits.length >= 2 ? digits.slice(-2) : ''}});
+      const [user, domain] = (p.email || '').split('@');
+      const emailHint = user && domain ? user.slice(0, 2) + '•••@' + domain : '';
+      return json({match: {first: p.first, last: p.last, phoneEnd: digits.length >= 2 ? digits.slice(-2) : '', emailHint, incomplete: !!p.to_complete}});
     }
+    // Fiche importée, pas encore complétée : on renvoie le jeton pour le formulaire de complément, sans associer l'appareil.
+    if (p.to_complete) return json({first: p.first, token: p.token, incomplete: true, email: p.email, last: p.last});
     // Si cet appareil est déjà associé à une AUTRE personne (on aide quelqu'un), on ne change pas son identité :
     // la présence est enregistrée avec le jeton renvoyé, sans toucher au cookie.
     const existing = parseCookie(req, 'comfrat_person');

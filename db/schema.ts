@@ -33,4 +33,7 @@ export const SCHEMA: string[] = [
   "ALTER TABLE person_details ADD COLUMN IF NOT EXISTS service_department TEXT",
   // « A été recontacté·e » : date du contact ; la personne sort définitivement de « À recontacter ».
   "ALTER TABLE followups ADD COLUMN IF NOT EXISTS recontacted TEXT",
+  // Fiches importées depuis un fichier (Excel / CSV) : date d'import tant que la personne n'a pas complété sa fiche.
+  // Ces fiches ne comptent dans aucune statistique avant d'être complétées.
+  "ALTER TABLE people ADD COLUMN IF NOT EXISTS to_complete TEXT",
 ];
