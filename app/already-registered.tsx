@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import {ArrowRight, Check, QrCode, UserCheck, X} from 'lucide-react';
+import {ArrowRight, Check, QrCode, UserCheck, UserPlus, X} from 'lucide-react';
 import {Dialog, DialogContent, DialogDescription, DialogTitle} from '@/components/ui/dialog';
 
 /**
@@ -10,17 +10,18 @@ import {Dialog, DialogContent, DialogDescription, DialogTitle} from '@/component
  * seulement après « Oui, c'est bien moi », l'appareil est reconnu et `onFound` enregistre la présence.
  * En cas de blocage seulement, `scanner` (le scan du QR personnel) est proposé en second temps.
  */
-export default function AlreadyRegistered({onFound, scanner}: {onFound: (first: string) => Promise<void> | void; scanner?: React.ReactNode}) {
+export default function AlreadyRegistered({onFound, scanner, onNewRegistration}: {onFound: (first: string) => Promise<void> | void; scanner?: React.ReactNode; onNewRegistration?: () => void}) {
   const [open, setOpen] = useState(false);
   const [first, setFirst] = useState(''), [last, setLast] = useState(''), [email, setEmail] = useState('');
   const [needEmail, setNeedEmail] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [scan, setScan] = useState(false);
   const [match, setMatch] = useState<{first: string; last: string; phoneEnd: string} | null>(null);
+  const [notMe, setNotMe] = useState(false);
   const lookup = (link: boolean) => fetch('/api/checkin/retrouver', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({first, last, email, link})});
 
   async function find(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setNotMe(false);
     try {
       const r = await lookup(false);
       const b = (await r.json()) as {match?: {first: string; last: string; phoneEnd: string}; needEmail?: boolean; error?: string};
@@ -51,9 +52,14 @@ export default function AlreadyRegistered({onFound, scanner}: {onFound: (first: 
       <label>Nom<input required maxLength={200} autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)}/></label>
       {needEmail && <label>E-mail<input required type="email" maxLength={200} autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}/></label>}
       {error && <p className="form-error" role="alert">{error}</p>}
+      {notMe && <div className="not-me-panel" role="status">
+        <strong><QrCode size={17}/> Montre ton QR personnel à l’équipe d’accueil</strong>
+        <p>Ouvre la photo ou la capture de ton QR code enregistrée dans ton téléphone, et présente-la à l’équipe d’accueil : elle la scannera pour valider ta présence. Sans QR, l’équipe peut aussi retrouver ta fiche avec toi.</p>
+        {onNewRegistration && <button type="button" className="text-link" onClick={onNewRegistration}><UserPlus size={15}/> Je ne suis pas encore inscrit·e : c’est ma première inscription</button>}
+      </div>}
       <button className="primary" disabled={busy}>{busy ? 'Recherche…' : 'Continuer'} <ArrowRight size={17}/></button>
       {scanner && (scan ? <div className="already-registered-scan">{scanner}</div> : <button type="button" className="secondary" onClick={() => setScan(true)}><QrCode size={16}/> Ça ne marche pas ? Scanner mon QR personnel</button>)}
-      <button type="button" className="text-link" onClick={() => { setOpen(false); setScan(false); setError(''); }}>Retour</button>
+      <button type="button" className="text-link" onClick={() => { setOpen(false); setScan(false); setNotMe(false); setError(''); }}>Retour</button>
       <Dialog open={!!match} onOpenChange={(o) => { if (!o && !busy) setMatch(null); }}>
         <DialogContent className="app-dialog its-me-dialog">
           <DialogTitle>C’est bien toi ?</DialogTitle>
@@ -63,7 +69,7 @@ export default function AlreadyRegistered({onFound, scanner}: {onFound: (first: 
             {match.phoneEnd && <small>Téléphone se terminant par •• {match.phoneEnd}</small>}
           </div>}
           <button type="button" className="primary confirm-button" disabled={busy} onClick={() => void itsMe()}><Check size={18}/> {busy ? 'Enregistrement…' : 'Oui, c’est bien moi — je valide ma présence'}</button>
-          <button type="button" className="secondary" disabled={busy} onClick={() => setMatch(null)}><X size={16}/> Non, ce n’est pas moi</button>
+          <button type="button" className="secondary" disabled={busy} onClick={() => { setMatch(null); setNotMe(true); setScan(false); }}><X size={16}/> Non, ce n’est pas moi</button>
         </DialogContent>
       </Dialog>
     </form>
