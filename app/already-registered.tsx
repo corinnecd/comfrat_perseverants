@@ -10,7 +10,7 @@ import {Dialog, DialogContent, DialogDescription, DialogTitle} from '@/component
  * seulement après « Oui, c'est bien moi », l'appareil est reconnu et `onFound` enregistre la présence.
  * En cas de blocage seulement, `scanner` (le scan du QR personnel) est proposé en second temps.
  */
-export default function AlreadyRegistered({onFound, scanner, onNewRegistration}: {onFound: (first: string) => Promise<void> | void; scanner?: React.ReactNode; onNewRegistration?: () => void}) {
+export default function AlreadyRegistered({onFound, scanner, onNewRegistration}: {onFound: (first: string, token: string) => Promise<void> | void; scanner?: React.ReactNode; onNewRegistration?: () => void}) {
   const [open, setOpen] = useState(false);
   const [first, setFirst] = useState(''), [last, setLast] = useState(''), [email, setEmail] = useState('');
   const [needEmail, setNeedEmail] = useState(false);
@@ -36,10 +36,10 @@ export default function AlreadyRegistered({onFound, scanner, onNewRegistration}:
     setBusy(true); setError('');
     try {
       const r = await lookup(true);
-      const b = (await r.json()) as {first?: string; error?: string};
-      if (!r.ok) throw Error(b.error || 'Enregistrement impossible.');
+      const b = (await r.json()) as {first?: string; token?: string; error?: string};
+      if (!r.ok || !b.token) throw Error(b.error || 'Enregistrement impossible.');
       setMatch(null);
-      await onFound(b.first || match.first);
+      await onFound(b.first || match.first, b.token);
     } catch (err) { setMatch(null); setError((err as Error).message); } finally { setBusy(false); }
   }
 

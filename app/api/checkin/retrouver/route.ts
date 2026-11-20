@@ -1,5 +1,5 @@
 import {db} from '../../../../db/raw';
-import {personCookie} from '../../../checkin-session';
+import {parseCookie, personCookie} from '../../../checkin-session';
 
 export const dynamic = 'force-dynamic';
 const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => Response.json(data, {status, headers: {'Cache-Control': 'no-store', ...headers}});
@@ -31,7 +31,11 @@ export async function POST(req: Request) {
       const digits = (p.phone || '').replace(/\D/g, '');
       return json({match: {first: p.first, last: p.last, phoneEnd: digits.length >= 2 ? digits.slice(-2) : ''}});
     }
-    return json({first: p.first, token: p.token}, 200, {'Set-Cookie': personCookie(p.token, req)});
+    // Si cet appareil est déjà associé à une AUTRE personne (on aide quelqu'un), on ne change pas son identité :
+    // la présence est enregistrée avec le jeton renvoyé, sans toucher au cookie.
+    const existing = parseCookie(req, 'comfrat_person');
+    const keepDevice = !!existing && existing !== p.token;
+    return json({first: p.first, token: p.token, helped: keepDevice}, 200, keepDevice ? {} : {'Set-Cookie': personCookie(p.token, req)});
   } catch (e) {
     console.error(e);
     return json({error: 'Service indisponible. Réessayez dans un instant.'}, 503);

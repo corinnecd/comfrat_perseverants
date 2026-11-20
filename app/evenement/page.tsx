@@ -148,7 +148,7 @@ export default function EventCheckin() {
               : <button className="primary link-registration" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>}
             {first
               ? <button className="secondary" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
-              : <AlreadyRegistered onFound={async (name) => { setFirst(name); await confirm(); }} scanner={<Scanner purpose="personal" onToken={(t) => void confirm(t)}/>} onNewRegistration={() => setStep('new')}/>}
+              : <AlreadyRegistered onFound={async (name, tok) => { setFirst(name); await confirm(tok); }} scanner={<Scanner purpose="personal" onToken={(t) => void confirm(t)}/>} onNewRegistration={() => setStep('new')}/>}
             {first && (qr ? <div className="personal-qr"><img src={qr} alt="Votre QR personnel à conserver"/><button type="button" className="secondary" onClick={() => void downloadImage(qr, 'mon-qr-perseverants.png')}><Download size={16}/> Conserver mon QR personnel</button><small>Présentez ce QR à l’accueil ou scannez-le à l’ouverture du scan.</small></div>
             : <button type="button" className="secondary" disabled={qrBusy} onClick={showMyQr}><QrCode size={18}/> {qrBusy ? 'Chargement…' : 'Afficher à nouveau mon QR code'}</button>)}
 
