@@ -175,3 +175,4 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 .recontacted-done{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #cfe5d6;border-radius:10px;background:#eef8f1;color:#1d6b3a;font-weight:600;font-size:14px}.recontacted-done span{display:flex;align-items:center;gap:6px}
 .remove-presence{display:inline-flex;align-items:center;gap:4px;margin-left:auto;font-size:12px;color:#a33a2c!important;white-space:nowrap}.remove-presence:hover{text-decoration:underline}
 .row-actions{white-space:nowrap}.row-actions .remove-presence{margin-right:8px;vertical-align:middle}
+.lost-qr-form{margin-top:4px;padding:14px;border:1px solid #eadfcb;border-radius:12px;background:#fffdf8;text-align:left}.lost-qr{margin-top:6px}.lost-qr p{margin:0}

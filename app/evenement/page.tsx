@@ -8,6 +8,7 @@ import VehicleField from '../vehicle-field';
 import ServiceField from '../service-field';
 import VehicleQuickAsk from '../vehicle-quick-ask';
 import Scanner from '../scanner';
+import LostQr from '../lost-qr';
 import {downloadImage} from '../download-image';
 
 type PublicEvent = {name: string; day: string; opensAt: string; closesAt: string; status: 'upcoming' | 'open' | 'closed'};
@@ -148,6 +149,7 @@ export default function EventCheckin() {
             {first
               ? <button className="secondary" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
               : <button className="secondary welcome-scan-button" onClick={() => setStep('scan')}><QrCode/> Déjà inscrit·e : scanner mon QR personnel</button>}
+            {!first && <LostQr onContinue={() => location.reload()}/>}
             {first && (qr ? <div className="personal-qr"><img src={qr} alt="Votre QR personnel à conserver"/><button type="button" className="secondary" onClick={() => void downloadImage(qr, 'mon-qr-perseverants.png')}><Download size={16}/> Conserver mon QR personnel</button><small>Présentez ce QR à l’accueil ou scannez-le à l’ouverture du scan.</small></div>
             : <button type="button" className="secondary" disabled={qrBusy} onClick={showMyQr}><QrCode size={18}/> {qrBusy ? 'Chargement…' : 'Afficher à nouveau mon QR code'}</button>)}
             {!first && <p className="welcome-hint">Déjà inscrit·e, sans ton QR ? Adresse-toi à l’équipe d’accueil : elle peut retrouver ta fiche.</p>}
