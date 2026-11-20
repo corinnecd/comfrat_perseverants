@@ -176,3 +176,4 @@ body{background:var(--brand-cream)}.topbar{background:#fffcf7;border-bottom-colo
 .remove-presence{display:inline-flex;align-items:center;gap:4px;margin-left:auto;font-size:12px;color:#a33a2c!important;white-space:nowrap}.remove-presence:hover{text-decoration:underline}
 .row-actions{white-space:nowrap}.row-actions .remove-presence{margin-right:8px;vertical-align:middle}
 .already-registered-form{margin-top:4px;padding:14px;border:1px solid #eadfcb;border-radius:12px;background:#fffdf8;text-align:left}
+.its-me-dialog{display:grid;gap:12px;text-align:center}.its-me-card{display:grid;gap:4px;padding:16px;border:1px solid #e9d6b0;border-radius:12px;background:#fbf4e6}.its-me-card strong{font-family:Georgia,serif;font-size:22px;color:#001b35}.its-me-card small{color:#6b5a3a;font-size:14px}
