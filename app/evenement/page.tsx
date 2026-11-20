@@ -140,12 +140,14 @@ export default function EventCheckin() {
           <h1>BIENVENUE{first ? ` ${first.toUpperCase()}` : ''}</h1>
           <p>{first
             ? `Tu es déjà inscrit·e à la Com’Frat, ${first} ! Enregistre ta présence à « ${event?.name} » en un clic.`
-            : 'Déjà inscrit·e à la Com’Frat ? Un simple scan de ton QR personnel suffit : pas besoin de ressaisir tes informations.'}</p>
+            : 'Première fois ? Inscris-toi en un instant. Déjà inscrit·e à la Com’Frat ? Un simple scan de ton QR personnel suffit : pas besoin de ressaisir tes informations.'}</p>
           <div className="welcome-choices">
             {first
               ? <button className="primary confirm-button" disabled={busy} onClick={() => void confirm()}><Check/>{busy ? 'Enregistrement…' : 'CONFIRMER MA PRÉSENCE'}</button>
-              : <button className="secondary welcome-scan-button" onClick={() => setStep('scan')}><QrCode/> Je m’enregistre</button>}
-            <button className={first ? 'secondary' : 'primary link-registration'} onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
+              : <button className="primary link-registration" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>}
+            {first
+              ? <button className="secondary" onClick={() => setStep('new')}><UserPlus/> C’est ma première inscription <ArrowRight/></button>
+              : <button className="secondary welcome-scan-button" onClick={() => setStep('scan')}><QrCode/> Déjà inscrit·e : scanner mon QR personnel</button>}
             {first && (qr ? <div className="personal-qr"><img src={qr} alt="Votre QR personnel à conserver"/><button type="button" className="secondary" onClick={() => void downloadImage(qr, 'mon-qr-perseverants.png')}><Download size={16}/> Conserver mon QR personnel</button><small>Présentez ce QR à l’accueil ou scannez-le à l’ouverture du scan.</small></div>
             : <button type="button" className="secondary" disabled={qrBusy} onClick={showMyQr}><QrCode size={18}/> {qrBusy ? 'Chargement…' : 'Afficher à nouveau mon QR code'}</button>)}
             {!first && <p className="welcome-hint">Déjà inscrit·e, sans ton QR ? Adresse-toi à l’équipe d’accueil : elle peut retrouver ta fiche.</p>}
